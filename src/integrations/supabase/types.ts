@@ -14,7 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          approved_count: number
+          avatar_url: string | null
+          city: string
+          created_at: string
+          credits: number
+          full_name: string
+          id: string
+          phone: string
+          rejected_count: number
+          total_credits: number
+        }
+        Insert: {
+          approved_count?: number
+          avatar_url?: string | null
+          city?: string
+          created_at?: string
+          credits?: number
+          full_name?: string
+          id: string
+          phone?: string
+          rejected_count?: number
+          total_credits?: number
+        }
+        Update: {
+          approved_count?: number
+          avatar_url?: string | null
+          city?: string
+          created_at?: string
+          credits?: number
+          full_name?: string
+          id?: string
+          phone?: string
+          rejected_count?: number
+          total_credits?: number
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          ai_reason: string
+          approved: boolean
+          comment: string
+          created_at: string
+          credits_awarded: number
+          id: string
+          lat: number
+          lng: number
+          photo_url: string
+          region: string
+          severity: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          ai_reason?: string
+          approved?: boolean
+          comment?: string
+          created_at?: string
+          credits_awarded?: number
+          id?: string
+          lat: number
+          lng: number
+          photo_url: string
+          region?: string
+          severity?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          ai_reason?: string
+          approved?: boolean
+          comment?: string
+          created_at?: string
+          credits_awarded?: number
+          id?: string
+          lat?: number
+          lng?: number
+          photo_url?: string
+          region?: string
+          severity?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
