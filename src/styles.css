@@ -62,39 +62,50 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --radius: 1rem;
+  --background: oklch(0.16 0.03 240);
+  --foreground: oklch(0.97 0.01 220);
+  --card: oklch(0.21 0.035 242);
+  --card-foreground: oklch(0.97 0.01 220);
+  --popover: oklch(0.21 0.035 242);
+  --popover-foreground: oklch(0.97 0.01 220);
+  --primary: oklch(0.75 0.14 200);
+  --primary-foreground: oklch(0.16 0.03 240);
+  --secondary: oklch(0.27 0.04 240);
+  --secondary-foreground: oklch(0.97 0.01 220);
+  --muted: oklch(0.25 0.035 240);
+  --muted-foreground: oklch(0.68 0.03 225);
+  --accent: oklch(0.62 0.17 250);
+  --accent-foreground: oklch(0.98 0.01 220);
+  --destructive: oklch(0.62 0.21 25);
+  --destructive-foreground: oklch(0.98 0.01 220);
+  --border: oklch(0.32 0.04 240);
+  --input: oklch(0.3 0.04 240);
+  --ring: oklch(0.75 0.14 200);
+  --chart-1: oklch(0.75 0.14 200);
+  --chart-2: oklch(0.62 0.17 250);
+  --chart-3: oklch(0.8 0.16 150);
+  --chart-4: oklch(0.82 0.16 90);
+  --chart-5: oklch(0.62 0.21 25);
+  --sidebar: oklch(0.19 0.03 242);
+  --sidebar-foreground: oklch(0.97 0.01 220);
+  --sidebar-primary: oklch(0.75 0.14 200);
+  --sidebar-primary-foreground: oklch(0.16 0.03 240);
+  --sidebar-accent: oklch(0.27 0.04 240);
+  --sidebar-accent-foreground: oklch(0.97 0.01 220);
+  --sidebar-border: oklch(0.32 0.04 240);
+  --sidebar-ring: oklch(0.75 0.14 200);
+  --severity-low: oklch(0.78 0.17 150);
+  --severity-medium: oklch(0.84 0.16 90);
+  --severity-high: oklch(0.65 0.22 25);
+  --gradient-brand: linear-gradient(120deg, oklch(0.82 0.13 190), oklch(0.6 0.19 255));
+  --glow-brand: 0 0 32px -6px oklch(0.75 0.14 200 / 0.55);
+}
+
+@theme inline {
+  --color-severity-low: var(--severity-low);
+  --color-severity-medium: var(--severity-medium);
+  --color-severity-high: var(--severity-high);
 }
 
 .dark {
@@ -140,5 +151,43 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      "Helvetica Neue",
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
+}
+
+@utility text-brand-gradient {
+  background-image: var(--gradient-brand);
+  background-clip: text;
+  color: transparent;
+}
+
+@utility bg-brand-gradient {
+  background-image: var(--gradient-brand);
+}
+
+@utility shadow-brand-glow {
+  box-shadow: var(--glow-brand);
+}
+
+/* Leaflet dark tuning */
+.leaflet-container {
+  background: var(--color-background);
+  font-family: inherit;
+}
+.leaflet-control-attribution,
+.leaflet-bar a {
+  background: var(--color-card) !important;
+  color: var(--color-muted-foreground) !important;
+  border-color: var(--color-border) !important;
+}
+.leaflet-tile-pane {
+  filter: invert(1) hue-rotate(190deg) brightness(0.9) contrast(0.9) saturate(0.7);
 }
