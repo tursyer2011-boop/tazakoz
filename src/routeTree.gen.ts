@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRatingRouteImport } from './routes/_authenticated/rating'
 import { Route as AuthenticatedReportRouteImport } from './routes/_authenticated/report'
+import { Route as AuthenticatedWaterRouteImport } from './routes/_authenticated/water'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,6 +31,11 @@ const AuthenticatedMapRoute = AuthenticatedMapRouteImport.update({
   path: '/map',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRatingRoute = AuthenticatedRatingRouteImport.update({
   id: '/rating',
   path: '/rating',
@@ -39,39 +46,52 @@ const AuthenticatedReportRoute = AuthenticatedReportRouteImport.update({
   path: '/report',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedWaterRoute = AuthenticatedWaterRouteImport.update({
+  id: '/water',
+  path: '/water',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/map': typeof AuthenticatedMapRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/rating': typeof AuthenticatedRatingRoute
   '/report': typeof AuthenticatedReportRoute
+  '/water': typeof AuthenticatedWaterRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/map': typeof AuthenticatedMapRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/rating': typeof AuthenticatedRatingRoute
   '/report': typeof AuthenticatedReportRoute
+  '/water': typeof AuthenticatedWaterRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/map': typeof AuthenticatedMapRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/rating': typeof AuthenticatedRatingRoute
   '/_authenticated/report': typeof AuthenticatedReportRoute
+  '/_authenticated/water': typeof AuthenticatedWaterRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/map' | '/rating' | '/report'
+  fullPaths: '/' | '/map' | '/profile' | '/rating' | '/report' | '/water'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/map' | '/rating' | '/report'
+  to: '/' | '/map' | '/profile' | '/rating' | '/report' | '/water'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/_authenticated/map'
+    | '/_authenticated/profile'
     | '/_authenticated/rating'
     | '/_authenticated/report'
+    | '/_authenticated/water'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -102,6 +122,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMapRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/rating': {
       id: '/_authenticated/rating'
       path: '/rating'
@@ -116,19 +143,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/water': {
+      id: '/_authenticated/water'
+      path: '/water'
+      fullPath: '/water'
+      preLoaderRoute: typeof AuthenticatedWaterRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedMapRoute: typeof AuthenticatedMapRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRatingRoute: typeof AuthenticatedRatingRoute
   AuthenticatedReportRoute: typeof AuthenticatedReportRoute
+  AuthenticatedWaterRoute: typeof AuthenticatedWaterRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMapRoute: AuthenticatedMapRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRatingRoute: AuthenticatedRatingRoute,
   AuthenticatedReportRoute: AuthenticatedReportRoute,
+  AuthenticatedWaterRoute: AuthenticatedWaterRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
