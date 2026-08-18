@@ -38,7 +38,7 @@ export const STATUS_LABELS: Record<string, string> = {
 };
 
 export function nearestRegion(lat: number, lng: number): string {
-  let best = REGIONS[0];
+  let best = REGIONS[0]!;
   let bestDist = Number.POSITIVE_INFINITY;
   for (const r of REGIONS) {
     const d = (r.lat - lat) ** 2 + (r.lng - lng) ** 2;
