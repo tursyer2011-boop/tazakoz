@@ -69,7 +69,7 @@ function AuthScreen() {
   async function social(provider: "google" | "apple") {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/auth/callback`,
     });
     setBusy(false);
     if (result.error) {
@@ -97,7 +97,7 @@ function AuthScreen() {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
             data: { full_name: fullName.trim(), phone: phone.trim(), city },
           },
         });
@@ -162,7 +162,7 @@ function AuthScreen() {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     setBusy(false);
     if (error) {
