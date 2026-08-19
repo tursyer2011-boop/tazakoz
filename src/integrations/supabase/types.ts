@@ -106,7 +106,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          approved_count: number
+          city: string
+          full_name: string
+          id: string
+          total_credits: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
