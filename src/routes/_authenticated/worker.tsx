@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CheckCircle2, Clock, HardHat, LoaderCircle, MapPin, Upload } from "lucide-react";
+import { CheckCircle2, Clock, HardHat, IdCard, LoaderCircle, MapPin, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole } from "@/hooks/useProfile";
@@ -95,9 +95,18 @@ function WorkerPage() {
 
 function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDone: () => void }) {
   const apply = useServerFn(applyAsWorker);
+  const { data: me } = useProfile();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [iin, setIin] = useState("");
+  const [docType, setDocType] = useState<"id_card" | "passport">("id_card");
+  const [docNumber, setDocNumber] = useState("");
+  const [fatherName, setFatherName] = useState("");
+  const [motherName, setMotherName] = useState("");
+  const [docFront, setDocFront] = useState<UploadedDoc | null>(null);
+  const [docBack, setDocBack] = useState<UploadedDoc | null>(null);
+  const [selfie, setSelfie] = useState<UploadedDoc | null>(null);
   const [place, setPlace] = useState<PickedLocation | null>(null);
   const [experience, setExperience] = useState("");
   const [about, setAbout] = useState("");
@@ -111,6 +120,18 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
       toast.error("Заполните ФИО, телефон и место работы");
       return;
     }
+    if (!/^\d{12}$/.test(iin.trim())) {
+      toast.error("ИИН должен содержать 12 цифр");
+      return;
+    }
+    if (docNumber.trim().length < 4) {
+      toast.error("Укажите номер документа");
+      return;
+    }
+    if (!docFront) {
+      toast.error("Загрузите фото документа");
+      return;
+    }
     setBusy(true);
     try {
       const res = await apply({
@@ -118,6 +139,14 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
           fullName: fullName.trim(),
           phone: phone.trim(),
           birthDate: birthDate || undefined,
+          iin: iin.trim(),
+          docType,
+          docNumber: docNumber.trim(),
+          docFrontUrl: docFront.path,
+          docBackUrl: docBack?.path ?? "",
+          selfieUrl: selfie?.path ?? "",
+          fatherName: fatherName.trim(),
+          motherName: motherName.trim(),
           region: place.regionName,
           regionCode: place.regionCode,
           city: place.settlement.name,
@@ -160,6 +189,66 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
           <Input id="w-birth" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="h-11 rounded-xl" />
         </div>
       </div>
+
+      <div className="space-y-3 rounded-2xl bg-secondary/30 p-3">
+        <p className="flex items-center gap-2 text-sm font-medium">
+          <IdCard className="size-4 text-primary" /> Документы
+        </p>
+        <div className="grid gap-1.5">
+          <Label htmlFor="w-iin">ИИН</Label>
+          <Input
+            id="w-iin"
+            value={iin}
+            inputMode="numeric"
+            onChange={(e) => setIin(e.target.value.replace(/\D/g, "").slice(0, 12))}
+            placeholder="12 цифр"
+            className="h-11 rounded-xl"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-1.5">
+            <Label>Тип документа</Label>
+            <div className="flex h-11 items-center gap-1 rounded-xl bg-background/60 p-1">
+              {(["id_card", "passport"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setDocType(t)}
+                  className={`h-9 flex-1 rounded-lg text-xs font-medium transition ${
+                    docType === t ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {t === "id_card" ? "Удостоверение" : "Паспорт"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="w-docnum">Номер документа</Label>
+            <Input id="w-docnum" value={docNumber} onChange={(e) => setDocNumber(e.target.value)} className="h-11 rounded-xl" maxLength={20} />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <DocUpload label="Лицевая" userId={me?.user.id} value={docFront} onChange={setDocFront} />
+          <DocUpload label="Оборот" userId={me?.user.id} value={docBack} onChange={setDocBack} />
+          <DocUpload label="Селфи с док." userId={me?.user.id} value={selfie} onChange={setSelfie} />
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Документы видны только вам и координаторам TAZA KÖZ.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-1.5">
+          <Label htmlFor="w-father">ФИО отца</Label>
+          <Input id="w-father" value={fatherName} onChange={(e) => setFatherName(e.target.value)} className="h-11 rounded-xl" maxLength={120} />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="w-mother">ФИО матери</Label>
+          <Input id="w-mother" value={motherName} onChange={(e) => setMotherName(e.target.value)} className="h-11 rounded-xl" maxLength={120} />
+        </div>
+      </div>
+
       <LocationPicker value={place} onChange={setPlace} />
       <div className="grid gap-1.5">
         <Label htmlFor="w-exp">Опыт работы</Label>
