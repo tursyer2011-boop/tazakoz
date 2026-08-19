@@ -219,9 +219,6 @@ function AuthScreen() {
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center gap-3 text-center">
           <Logo />
-          <p className="text-xs font-semibold tracking-[0.3em] text-primary uppercase">
-            Kör. Habarla. Qorğa.
-          </p>
           <h1 className="text-2xl font-semibold">
             {step === "verify"
               ? "Подтверждение почты"
