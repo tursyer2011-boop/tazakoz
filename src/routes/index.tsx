@@ -257,6 +257,7 @@ function AuthScreen() {
             disabled={busy}
             onClick={() => social("google")}
           >
+            {busy ? <LoaderCircle className="animate-spin" /> : null}
             Войти через Google
           </Button>
           <Button
@@ -265,6 +266,7 @@ function AuthScreen() {
             disabled={busy}
             onClick={() => social("apple")}
           >
+            {busy ? <LoaderCircle className="animate-spin" /> : null}
             Войти через Apple
           </Button>
         </div>
@@ -350,6 +352,7 @@ function AuthScreen() {
             disabled={busy}
             className="bg-brand-gradient shadow-brand-glow h-12 w-full rounded-xl text-base font-semibold text-primary-foreground"
           >
+            {busy ? <LoaderCircle className="animate-spin" /> : null}
             {mode === "signup" ? "Зарегистрироваться" : "Войти"}
           </Button>
         </form>
