@@ -55,7 +55,7 @@ function ResetPasswordPage() {
     <main className="flex min-h-screen flex-col items-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center gap-3 text-center">
-          <Logo className="h-12" />
+          <Logo />
           <h1 className="text-2xl font-semibold">Новый пароль</h1>
         </div>
         <form onSubmit={submit} className="glass-card mt-6 space-y-4 rounded-3xl p-5">

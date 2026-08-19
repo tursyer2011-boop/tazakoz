@@ -218,7 +218,7 @@ function AuthScreen() {
     <main className="relative flex min-h-screen flex-col items-center px-4 py-10">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center gap-3 text-center">
-          <Logo className="h-14" />
+          <Logo />
           <p className="text-xs font-semibold tracking-[0.3em] text-primary uppercase">
             Kör. Habarla. Qorğa.
           </p>
