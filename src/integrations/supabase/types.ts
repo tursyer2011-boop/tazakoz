@@ -103,7 +103,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard: {
+        Row: {
+          approved_count: number | null
+          city: string | null
+          full_name: string | null
+          id: string | null
+          total_credits: number | null
+        }
+        Insert: {
+          approved_count?: number | null
+          city?: string | null
+          full_name?: string | null
+          id?: string | null
+          total_credits?: number | null
+        }
+        Update: {
+          approved_count?: number | null
+          city?: string | null
+          full_name?: string | null
+          id?: string | null
+          total_credits?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
