@@ -61,7 +61,8 @@ export async function sendTelegram(
     if (result.ok) sent = true;
     else lastError = result.error;
   }
-  return sent ? { sent: true } : { sent: false, error: lastError };
+  if (sent) return { sent: true };
+  return { sent: false, error: lastError ?? "Telegram недоступен" };
 }
 
 export async function answerCallback(callbackId: string, text: string) {
