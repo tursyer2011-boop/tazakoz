@@ -8,6 +8,8 @@ function safeEqual(a: string, b: string): boolean {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
+const ADMIN_PASSWORD = "TazaKoz.online.job";
+
 export const Route = createFileRoute("/api/public/telegram/webhook")({
   server: {
     handlers: {
@@ -23,16 +25,40 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
 
         const update = (await request.json()) as {
           callback_query?: { id: string; data?: string };
-          message?: { text?: string; chat?: { id: number } };
+          message?: { text?: string; chat?: { id: number; title?: string; username?: string } };
         };
 
         const message = update.message;
-        if (message?.chat?.id && message.text?.startsWith("/start")) {
-          await sendTelegram(
-            `TAZA KÖZ бот подключён.\nChat ID: <code>${message.chat.id}</code>`,
-            undefined,
-            message.chat.id,
-          );
+        if (message?.chat?.id && message.text) {
+          const chatId = message.chat.id;
+          const text = message.text.trim();
+
+          if (text.startsWith("/start")) {
+            await sendTelegram(
+              `👁 <b>TAZA KÖZ</b>\n\nЧтобы получать заявки работников, отправьте код доступа сообщением.`,
+              undefined,
+              chatId,
+            );
+            return Response.json({ ok: true });
+          }
+
+          if (text.replace(/^\/code\s+/i, "") === ADMIN_PASSWORD) {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            await supabaseAdmin
+              .from("telegram_admin_chats")
+              .upsert(
+                { chat_id: chatId, title: message.chat.title ?? message.chat.username ?? null },
+                { onConflict: "chat_id" },
+              );
+            await sendTelegram(
+              `✅ Доступ подтверждён. Этот чат будет получать заявки работников TAZA KÖZ.\nChat ID: <code>${chatId}</code>`,
+              undefined,
+              chatId,
+            );
+            return Response.json({ ok: true });
+          }
+
+          await sendTelegram(`❌ Неверный код доступа.`, undefined, chatId);
           return Response.json({ ok: true });
         }
 
