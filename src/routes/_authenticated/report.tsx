@@ -23,7 +23,14 @@ export const Route = createFileRoute("/_authenticated/report")({
   component: ReportPage,
 });
 
-type Result = { approved: boolean; severity: string; reason: string; credits: number };
+type Result = {
+  approved: boolean;
+  severity: string;
+  reason: string;
+  credits: number;
+  address?: string;
+  water?: string;
+};
 
 function ReportPage() {
   const navigate = useNavigate();
@@ -191,6 +198,12 @@ function ReportPage() {
                 {SEVERITY[(result.severity as Severity) ?? "low"].label}
               </span>{" "}
               · +{result.credits} кредитов
+            </p>
+          )}
+          {(result.address || result.water) && (
+            <p className="text-sm text-muted-foreground">
+              {result.address}
+              {result.water ? ` · водоём: ${result.water}` : ""}
             </p>
           )}
           <p className="text-sm text-muted-foreground">{result.reason}</p>

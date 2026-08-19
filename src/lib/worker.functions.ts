@@ -1,0 +1,214 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { analyzeCleanup } from "@/lib/ai.server";
+import { sendTelegram } from "@/lib/telegram.server";
+
+const ApplyInput = z.object({
+  fullName: z.string().trim().min(3).max(120),
+  phone: z.string().trim().min(10).max(20),
+  birthDate: z.string().max(10).optional(),
+  region: z.string().max(80).default(""),
+  regionCode: z.string().max(20).default(""),
+  city: z.string().max(80).default(""),
+  about: z.string().max(800).default(""),
+  experience: z.string().max(800).default(""),
+  hasTransport: z.boolean().default(false),
+});
+
+const ReviewInput = z.object({
+  applicationId: z.string().uuid(),
+  decision: z.enum(["approved", "rejected"]),
+  note: z.string().max(400).default(""),
+});
+
+const TakeInput = z.object({ reportId: z.string().uuid() });
+
+const CompleteInput = z.object({
+  reportId: z.string().uuid(),
+  afterPhotoPath: z.string().min(1),
+  afterImageBase64: z.string().min(100),
+  beforeImageBase64: z.string().min(100),
+});
+
+export const applyAsWorker = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => ApplyInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: application, error } = await context.supabase
+      .from("worker_applications")
+      .insert({
+        user_id: context.userId,
+        full_name: data.fullName,
+        phone: data.phone,
+        birth_date: data.birthDate || null,
+        region: data.region,
+        region_code: data.regionCode,
+        city: data.city,
+        about: data.about,
+        experience: data.experience,
+        has_transport: data.hasTransport,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "23505") throw new Error("Ваша заявка уже на рассмотрении");
+      throw new Error(error.message);
+    }
+
+    const telegram = await sendTelegram(
+      `🧹 <b>Новая заявка работника TAZA KÖZ</b>\n` +
+        `ФИО: ${data.fullName}\nТелефон: ${data.phone}\n` +
+        `Регион: ${data.region} · ${data.city}\n` +
+        `Транспорт: ${data.hasTransport ? "есть" : "нет"}\n` +
+        `Опыт: ${data.experience || "—"}\nО себе: ${data.about || "—"}`,
+      [
+        [
+          { text: "✅ Одобрить", callback_data: `wapp:approve:${application.id}` },
+          { text: "❌ Отклонить", callback_data: `wapp:reject:${application.id}` },
+        ],
+      ],
+    );
+
+    if (telegram.sent) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin
+        .from("worker_applications")
+        .update({ telegram_notified_at: new Date().toISOString() })
+        .eq("id", application.id);
+    }
+
+    return { id: application.id, telegramNotified: telegram.sent };
+  });
+
+export const reviewApplication = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => ReviewInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: isStaff } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    const { data: isModerator } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "moderator",
+    });
+    if (!isStaff && !isModerator) throw new Error("Недостаточно прав");
+
+    const { data: application, error } = await context.supabase
+      .from("worker_applications")
+      .update({
+        status: data.decision,
+        review_note: data.note,
+        reviewed_by: context.userId,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", data.applicationId)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+
+    if (data.decision === "approved") {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin
+        .from("user_roles")
+        .upsert({ user_id: application.user_id, role: "worker" }, { onConflict: "user_id,role" });
+    }
+
+    return { status: data.decision };
+  });
+
+export const takeTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => TakeInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: isWorker } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "worker",
+    });
+    if (!isWorker) throw new Error("Доступ только для работников");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: updated, error } = await supabaseAdmin
+      .from("reports")
+      .update({
+        assigned_worker_id: context.userId,
+        assigned_at: new Date().toISOString(),
+        status: "assigned",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.reportId)
+      .is("assigned_worker_id", null)
+      .select()
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (!updated) throw new Error("Задание уже взято другим работником");
+    return { ok: true };
+  });
+
+export const completeTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => CompleteInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: report, error: readError } = await context.supabase
+      .from("reports")
+      .select("id, assigned_worker_id, worker_reward, severity")
+      .eq("id", data.reportId)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
+    if (!report || report.assigned_worker_id !== context.userId) {
+      throw new Error("Это задание вам не назначено");
+    }
+
+    const verdict = await analyzeCleanup(data.beforeImageBase64, data.afterImageBase64);
+    const accepted = verdict.is_real_photo && verdict.same_place && verdict.is_clean;
+    const reason = verdict.reason || (accepted ? "Уборка подтверждена." : "Уборка не подтверждена.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    if (!accepted) {
+      await supabaseAdmin
+        .from("reports")
+        .update({ status: "in_progress", updated_at: new Date().toISOString() })
+        .eq("id", report.id);
+      return { accepted, reason, reward: 0 };
+    }
+
+    const reward = report.worker_reward ?? 0;
+    const now = new Date().toISOString();
+    await supabaseAdmin
+      .from("reports")
+      .update({
+        status: "resolved",
+        cleaned_photo_url: data.afterPhotoPath,
+        cleaned_at: now,
+        verified_at: now,
+        updated_at: now,
+      })
+      .eq("id", report.id);
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("credits, total_credits")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (profile) {
+      await supabaseAdmin
+        .from("profiles")
+        .update({ credits: profile.credits + reward, total_credits: profile.total_credits + reward })
+        .eq("id", context.userId);
+    }
+    await supabaseAdmin.from("credit_transactions").insert({
+      user_id: context.userId,
+      amount: reward,
+      kind: "cleanup_reward",
+      note: `Уборка подтверждена ИИ (${report.severity})`,
+      report_id: report.id,
+    });
+
+    await sendTelegram(`✅ <b>Уборка подтверждена</b>\nЗадание ${report.id}\nНачислено: ${reward} Taza Credits`);
+
+    return { accepted, reason, reward };
+  });

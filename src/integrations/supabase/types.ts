@@ -14,6 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          sender_id: string
+          thread_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          thread_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_threads: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          last_message_at: string
+          report_id: string | null
+          status: string
+          subject: string
+          worker_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          last_message_at?: string
+          report_id?: string | null
+          status?: string
+          subject?: string
+          worker_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          last_message_at?: string
+          report_id?: string | null
+          status?: string
+          subject?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_threads_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          note: string
+          report_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          note?: string
+          report_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          note?: string
+          report_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           approved_count: number
@@ -97,8 +211,13 @@ export type Database = {
       }
       reports: {
         Row: {
+          address: string
           ai_reason: string
           approved: boolean
+          assigned_at: string | null
+          assigned_worker_id: string | null
+          cleaned_at: string | null
+          cleaned_photo_url: string | null
           comment: string
           created_at: string
           credits_awarded: number
@@ -109,11 +228,20 @@ export type Database = {
           region: string
           severity: string
           status: string
+          updated_at: string
           user_id: string
+          verified_at: string | null
+          water_body: string
+          worker_reward: number
         }
         Insert: {
+          address?: string
           ai_reason?: string
           approved?: boolean
+          assigned_at?: string | null
+          assigned_worker_id?: string | null
+          cleaned_at?: string | null
+          cleaned_photo_url?: string | null
           comment?: string
           created_at?: string
           credits_awarded?: number
@@ -124,11 +252,20 @@ export type Database = {
           region?: string
           severity?: string
           status?: string
+          updated_at?: string
           user_id: string
+          verified_at?: string | null
+          water_body?: string
+          worker_reward?: number
         }
         Update: {
+          address?: string
           ai_reason?: string
           approved?: boolean
+          assigned_at?: string | null
+          assigned_worker_id?: string | null
+          cleaned_at?: string | null
+          cleaned_photo_url?: string | null
           comment?: string
           created_at?: string
           credits_awarded?: number
@@ -139,7 +276,11 @@ export type Database = {
           region?: string
           severity?: string
           status?: string
+          updated_at?: string
           user_id?: string
+          verified_at?: string | null
+          water_body?: string
+          worker_reward?: number
         }
         Relationships: []
       }
@@ -164,11 +305,75 @@ export type Database = {
         }
         Relationships: []
       }
+      worker_applications: {
+        Row: {
+          about: string
+          birth_date: string | null
+          city: string
+          created_at: string
+          experience: string
+          full_name: string
+          has_transport: boolean
+          id: string
+          phone: string
+          region: string
+          region_code: string
+          review_note: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          telegram_notified_at: string | null
+          user_id: string
+        }
+        Insert: {
+          about?: string
+          birth_date?: string | null
+          city?: string
+          created_at?: string
+          experience?: string
+          full_name: string
+          has_transport?: boolean
+          id?: string
+          phone: string
+          region?: string
+          region_code?: string
+          review_note?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          telegram_notified_at?: string | null
+          user_id: string
+        }
+        Update: {
+          about?: string
+          birth_date?: string | null
+          city?: string
+          created_at?: string
+          experience?: string
+          full_name?: string
+          has_transport?: boolean
+          id?: string
+          phone?: string
+          region?: string
+          region_code?: string
+          review_note?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          telegram_notified_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      can_access_thread: {
+        Args: { _thread_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_leaderboard: {
         Args: { _limit?: number }
         Returns: {
