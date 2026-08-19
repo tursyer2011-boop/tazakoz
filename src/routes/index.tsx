@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { useSession } from "@/hooks/useSession";
 import { REGIONS } from "@/lib/regions";
 
@@ -65,20 +64,6 @@ function AuthScreen() {
     }, 1000);
     return () => window.clearInterval(timer);
   }, [resendSeconds]);
-
-  async function social(provider: "google" | "apple") {
-    setBusy(true);
-    const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: `${window.location.origin}/auth/callback`,
-    });
-    setBusy(false);
-    if (result.error) {
-      toast.error("Не удалось войти. Попробуйте ещё раз.");
-      return;
-    }
-    if (result.redirected) return;
-    navigate({ to: "/map", replace: true });
-  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -249,33 +234,6 @@ function AuthScreen() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-background px-5 py-10">
       <div className="w-full max-w-sm space-y-7">
         <Logo />
-
-        <div className="space-y-3">
-          <Button
-            variant="secondary"
-            className="h-12 w-full rounded-xl text-base"
-            disabled={busy}
-            onClick={() => social("google")}
-          >
-            {busy ? <LoaderCircle className="animate-spin" /> : null}
-            Войти через Google
-          </Button>
-          <Button
-            variant="secondary"
-            className="h-12 w-full rounded-xl text-base"
-            disabled={busy}
-            onClick={() => social("apple")}
-          >
-            {busy ? <LoaderCircle className="animate-spin" /> : null}
-            Войти через Apple
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="h-px flex-1 bg-border" />
-          или
-          <span className="h-px flex-1 bg-border" />
-        </div>
 
         <form onSubmit={submit} className="space-y-3">
           <div className="space-y-1.5">
