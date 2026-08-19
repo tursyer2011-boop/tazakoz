@@ -8,6 +8,8 @@ function safeEqual(a: string, b: string): boolean {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
+const ADMIN_PASSWORD = "TazaKoz.online.job";
+
 export const Route = createFileRoute("/api/public/telegram/webhook")({
   server: {
     handlers: {
