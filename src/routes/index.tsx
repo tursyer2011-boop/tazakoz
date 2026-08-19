@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { useSession } from "@/hooks/useSession";
 import { REGIONS } from "@/lib/regions";
 
@@ -65,20 +64,6 @@ function AuthScreen() {
     }, 1000);
     return () => window.clearInterval(timer);
   }, [resendSeconds]);
-
-  async function social(provider: "google" | "apple") {
-    setBusy(true);
-    const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: `${window.location.origin}/auth/callback`,
-    });
-    setBusy(false);
-    if (result.error) {
-      toast.error("Не удалось войти. Попробуйте ещё раз.");
-      return;
-    }
-    if (result.redirected) return;
-    navigate({ to: "/map", replace: true });
-  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
