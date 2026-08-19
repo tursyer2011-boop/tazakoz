@@ -94,7 +94,6 @@ function WorkerPage() {
 }
 
 function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDone: () => void }) {
-  type UploadedDocAlias = UploadedDoc;
   const apply = useServerFn(applyAsWorker);
   const { data: me } = useProfile();
   const [fullName, setFullName] = useState("");
@@ -271,6 +270,71 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
         {busy ? <LoaderCircle className="size-5 animate-spin" /> : "Отправить заявку"}
       </Button>
     </form>
+  );
+}
+
+type UploadedDoc = { path: string; preview: string };
+
+function DocUpload({
+  label,
+  userId,
+  value,
+  onChange,
+}: {
+  label: string;
+  userId: string | undefined;
+  value: UploadedDoc | null;
+  onChange: (doc: UploadedDoc | null) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !userId) return;
+    setBusy(true);
+    try {
+      const { blob, dataUrl } = await resizeImage(file, 1600);
+      const path = `${userId}/doc-${crypto.randomUUID()}.jpg`;
+      const { error } = await supabase.storage
+        .from("worker-docs")
+        .upload(path, blob, { contentType: "image/jpeg" });
+      if (error) throw error;
+      onChange({ path, preview: dataUrl });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Не удалось загрузить фото");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-1">
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+        className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-background/60"
+      >
+        {busy ? (
+          <LoaderCircle className="size-4 animate-spin text-primary" />
+        ) : value ? (
+          <img src={value.preview} alt={label} className="size-full object-cover" />
+        ) : (
+          <Upload className="size-4 text-muted-foreground" />
+        )}
+      </button>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-muted-foreground">{label}</span>
+        {value && (
+          <button type="button" onClick={() => onChange(null)} className="text-muted-foreground">
+            <X className="size-3" />
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
