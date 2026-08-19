@@ -20,3 +20,13 @@ export async function resizeImage(file: File, max = 1280): Promise<{ blob: Blob;
   );
   return { blob, dataUrl };
 }
+export async function urlToDataUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Не удалось прочитать фото"));
+    reader.readAsDataURL(blob);
+  });
+}

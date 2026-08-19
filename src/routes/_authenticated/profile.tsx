@@ -1,8 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LogOut } from "lucide-react";
+import { HardHat, LogOut, MessagesSquare, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
+import { useProfile, hasRole } from "@/hooks/useProfile";
 import { SEVERITY, STATUS_LABELS, type Severity } from "@/lib/regions";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,6 +24,8 @@ function ProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useSession();
+  const { data: me } = useProfile();
+  const isStaff = hasRole(me?.roles, "admin", "moderator");
 
   const { data: profile } = useQuery({
     enabled: !!user,
@@ -47,6 +50,21 @@ function ProfilePage() {
         .select("id, region, severity, status, approved, ai_reason, credits_awarded, created_at")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: transactions = [] } = useQuery({
+    enabled: !!user,
+    queryKey: ["credit-transactions", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("credit_transactions")
+        .select("id, amount, kind, note, created_at")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(30);
       if (error) throw error;
       return data;
     },
@@ -83,6 +101,30 @@ function ProfilePage() {
           <p className="text-xs text-muted-foreground">Всего накоплено</p>
           <p className="mt-1 text-2xl font-semibold">{profile?.total_credits ?? 0}</p>
         </div>
+      </div>
+
+      <div className="grid gap-2">
+        <Link
+          to="/chat"
+          className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm font-medium"
+        >
+          <MessagesSquare className="size-5 text-primary" strokeWidth={1.6} /> Чат с координатором
+        </Link>
+        <Link
+          to="/worker"
+          className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm font-medium"
+        >
+          <HardHat className="size-5 text-primary" strokeWidth={1.6} />{" "}
+          {hasRole(me?.roles, "worker", "captain") ? "Мои задания" : "Стать работником"}
+        </Link>
+        {isStaff && (
+          <Link
+            to="/admin"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm font-medium"
+          >
+            <ShieldCheck className="size-5 text-primary" strokeWidth={1.6} /> Админ-панель
+          </Link>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -122,6 +164,26 @@ function ProfilePage() {
           </div>
         ))}
       </div>
+
+      {transactions.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Движение кредитов</p>
+          {transactions.map((t) => (
+            <div key={t.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-3 text-sm">
+              <div className="min-w-0">
+                <p className="truncate">{t.note || t.kind}</p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(t.created_at).toLocaleDateString("ru-RU")}
+                </p>
+              </div>
+              <span className={t.amount >= 0 ? "text-primary" : "text-destructive"}>
+                {t.amount >= 0 ? "+" : ""}
+                {t.amount}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <Button variant="secondary" className="h-12 w-full rounded-xl" onClick={signOut}>
         <LogOut className="mr-2 size-4" /> Выйти
