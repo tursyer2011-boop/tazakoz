@@ -1,25 +1,25 @@
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/telegram";
-
 export type TelegramButton = { text: string; callback_data: string };
+
+function apiUrl(method: string): string | null {
+  const token = process.env["TELEGRAM_BOT_TOKEN"];
+  if (!token) return null;
+  return `https://api.telegram.org/bot${token}/${method}`;
+}
 
 export async function sendTelegram(
   text: string,
   buttons?: TelegramButton[][],
+  chatIdOverride?: string | number,
 ): Promise<{ sent: boolean; error?: string }> {
-  const lovableKey = process.env["LOVABLE_API_KEY"];
-  const telegramKey = process.env["TELEGRAM_API_KEY"];
-  const chatId = process.env["TELEGRAM_ADMIN_CHAT_ID"];
-  if (!lovableKey || !telegramKey || !chatId) {
+  const url = apiUrl("sendMessage");
+  const chatId = chatIdOverride ?? process.env["TELEGRAM_ADMIN_CHAT_ID"];
+  if (!url || !chatId) {
     return { sent: false, error: "Telegram не подключён" };
   }
 
-  const res = await fetch(`${GATEWAY_URL}/sendMessage`, {
+  const res = await fetch(url, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${lovableKey}`,
-      "X-Connection-Api-Key": telegramKey,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
       text,
@@ -39,16 +39,11 @@ export async function sendTelegram(
 }
 
 export async function answerCallback(callbackId: string, text: string) {
-  const lovableKey = process.env["LOVABLE_API_KEY"];
-  const telegramKey = process.env["TELEGRAM_API_KEY"];
-  if (!lovableKey || !telegramKey) return;
-  await fetch(`${GATEWAY_URL}/answerCallbackQuery`, {
+  const url = apiUrl("answerCallbackQuery");
+  if (!url) return;
+  await fetch(url, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${lovableKey}`,
-      "X-Connection-Api-Key": telegramKey,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ callback_query_id: callbackId, text }),
   });
 }
