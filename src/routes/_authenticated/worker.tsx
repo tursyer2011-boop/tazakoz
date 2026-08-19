@@ -94,6 +94,7 @@ function WorkerPage() {
 }
 
 function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDone: () => void }) {
+  type UploadedDocAlias = UploadedDoc;
   const apply = useServerFn(applyAsWorker);
   const { data: me } = useProfile();
   const [fullName, setFullName] = useState("");
