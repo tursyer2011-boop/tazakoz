@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHash, timingSafeEqual } from "crypto";
-import { answerCallback } from "@/lib/telegram.server";
+import { answerCallback, sendTelegram } from "@/lib/telegram.server";
 
 function safeEqual(a: string, b: string): boolean {
   const left = Buffer.from(a);
@@ -12,18 +12,30 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const telegramKey = process.env["TELEGRAM_API_KEY"];
-        if (!telegramKey) return new Response("Not configured", { status: 503 });
+        const botToken = process.env["TELEGRAM_BOT_TOKEN"];
+        if (!botToken) return new Response("Not configured", { status: 503 });
 
         const expected = createHash("sha256")
-          .update(`telegram-webhook:${telegramKey}`)
+          .update(`telegram-webhook:${botToken}`)
           .digest("base64url");
         const provided = request.headers.get("X-Telegram-Bot-Api-Secret-Token") ?? "";
         if (!safeEqual(provided, expected)) return new Response("Unauthorized", { status: 401 });
 
         const update = (await request.json()) as {
           callback_query?: { id: string; data?: string };
+          message?: { text?: string; chat?: { id: number } };
         };
+
+        const message = update.message;
+        if (message?.chat?.id && message.text?.startsWith("/start")) {
+          await sendTelegram(
+            `TAZA KÖZ бот подключён.\nChat ID: <code>${message.chat.id}</code>`,
+            undefined,
+            message.chat.id,
+          );
+          return Response.json({ ok: true });
+        }
+
         const callback = update.callback_query;
         if (!callback?.data) return Response.json({ ok: true });
 
