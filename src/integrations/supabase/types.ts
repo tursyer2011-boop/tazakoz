@@ -18,38 +18,80 @@ export type Database = {
         Row: {
           approved_count: number
           avatar_url: string | null
+          birth_date: string | null
           city: string
+          consent_data_at: string | null
+          consent_privacy_at: string | null
+          consent_terms_at: string | null
           created_at: string
           credits: number
+          first_name: string
           full_name: string
           id: string
+          last_name: string
+          lat: number | null
+          lng: number | null
+          patronymic: string
           phone: string
+          region: string
+          region_code: string
           rejected_count: number
+          settlement_id: number | null
           total_credits: number
+          updated_at: string
+          username: string | null
         }
         Insert: {
           approved_count?: number
           avatar_url?: string | null
+          birth_date?: string | null
           city?: string
+          consent_data_at?: string | null
+          consent_privacy_at?: string | null
+          consent_terms_at?: string | null
           created_at?: string
           credits?: number
+          first_name?: string
           full_name?: string
           id: string
+          last_name?: string
+          lat?: number | null
+          lng?: number | null
+          patronymic?: string
           phone?: string
+          region?: string
+          region_code?: string
           rejected_count?: number
+          settlement_id?: number | null
           total_credits?: number
+          updated_at?: string
+          username?: string | null
         }
         Update: {
           approved_count?: number
           avatar_url?: string | null
+          birth_date?: string | null
           city?: string
+          consent_data_at?: string | null
+          consent_privacy_at?: string | null
+          consent_terms_at?: string | null
           created_at?: string
           credits?: number
+          first_name?: string
           full_name?: string
           id?: string
+          last_name?: string
+          lat?: number | null
+          lng?: number | null
+          patronymic?: string
           phone?: string
+          region?: string
+          region_code?: string
           rejected_count?: number
+          settlement_id?: number | null
           total_credits?: number
+          updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -101,6 +143,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -116,9 +179,22 @@ export type Database = {
           total_credits: number
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "user"
+        | "volunteer"
+        | "worker"
+        | "captain"
+        | "moderator"
+        | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -245,6 +321,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "user",
+        "volunteer",
+        "worker",
+        "captain",
+        "moderator",
+        "admin",
+      ],
+    },
   },
 } as const
