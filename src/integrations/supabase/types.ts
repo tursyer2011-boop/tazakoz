@@ -103,33 +103,19 @@ export type Database = {
       }
     }
     Views: {
-      leaderboard: {
-        Row: {
-          approved_count: number | null
-          city: string | null
-          full_name: string | null
-          id: string | null
-          total_credits: number | null
-        }
-        Insert: {
-          approved_count?: number | null
-          city?: string | null
-          full_name?: string | null
-          id?: string | null
-          total_credits?: number | null
-        }
-        Update: {
-          approved_count?: number | null
-          city?: string | null
-          full_name?: string | null
-          id?: string | null
-          total_credits?: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          approved_count: number
+          city: string
+          full_name: string
+          id: string
+          total_credits: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
