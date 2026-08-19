@@ -8,6 +8,14 @@ const ApplyInput = z.object({
   fullName: z.string().trim().min(3).max(120),
   phone: z.string().trim().min(10).max(20),
   birthDate: z.string().max(10).optional(),
+  iin: z.string().trim().regex(/^\d{12}$/, "ИИН должен содержать 12 цифр"),
+  docType: z.enum(["id_card", "passport"]),
+  docNumber: z.string().trim().min(4).max(20),
+  docFrontUrl: z.string().trim().min(1).max(300),
+  docBackUrl: z.string().trim().max(300).default(""),
+  selfieUrl: z.string().trim().max(300).default(""),
+  fatherName: z.string().trim().max(120).default(""),
+  motherName: z.string().trim().max(120).default(""),
   region: z.string().max(80).default(""),
   regionCode: z.string().max(20).default(""),
   city: z.string().max(80).default(""),
@@ -42,6 +50,14 @@ export const applyAsWorker = createServerFn({ method: "POST" })
         full_name: data.fullName,
         phone: data.phone,
         birth_date: data.birthDate || null,
+        iin: data.iin,
+        doc_type: data.docType,
+        doc_number: data.docNumber,
+        doc_front_url: data.docFrontUrl,
+        doc_back_url: data.docBackUrl || null,
+        selfie_url: data.selfieUrl || null,
+        father_name: data.fatherName,
+        mother_name: data.motherName,
         region: data.region,
         region_code: data.regionCode,
         city: data.city,
@@ -60,6 +76,9 @@ export const applyAsWorker = createServerFn({ method: "POST" })
     const telegram = await sendTelegram(
       `🧹 <b>Новая заявка работника TAZA KÖZ</b>\n` +
         `ФИО: ${data.fullName}\nТелефон: ${data.phone}\n` +
+        `ИИН: ${data.iin}\n` +
+        `Документ: ${data.docType === "passport" ? "Паспорт" : "Удостоверение личности"} № ${data.docNumber}\n` +
+        `Родители: ${data.fatherName || "—"} / ${data.motherName || "—"}\n` +
         `Регион: ${data.region} · ${data.city}\n` +
         `Транспорт: ${data.hasTransport ? "есть" : "нет"}\n` +
         `Опыт: ${data.experience || "—"}\nО себе: ${data.about || "—"}`,
