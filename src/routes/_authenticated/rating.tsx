@@ -29,13 +29,9 @@ function RatingPage() {
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["rating"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, city, total_credits, approved_count")
-        .order("total_credits", { ascending: false })
-        .limit(100);
+      const { data, error } = await supabase.rpc("get_leaderboard", { _limit: 100 });
       if (error) throw error;
-      return data as Row[];
+      return (data ?? []) as Row[];
     },
   });
 
