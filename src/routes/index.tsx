@@ -250,33 +250,6 @@ function AuthScreen() {
       <div className="w-full max-w-sm space-y-7">
         <Logo />
 
-        <div className="space-y-3">
-          <Button
-            variant="secondary"
-            className="h-12 w-full rounded-xl text-base"
-            disabled={busy}
-            onClick={() => social("google")}
-          >
-            {busy ? <LoaderCircle className="animate-spin" /> : null}
-            Войти через Google
-          </Button>
-          <Button
-            variant="secondary"
-            className="h-12 w-full rounded-xl text-base"
-            disabled={busy}
-            onClick={() => social("apple")}
-          >
-            {busy ? <LoaderCircle className="animate-spin" /> : null}
-            Войти через Apple
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="h-px flex-1 bg-border" />
-          или
-          <span className="h-px flex-1 bg-border" />
-        </div>
-
         <form onSubmit={submit} className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
