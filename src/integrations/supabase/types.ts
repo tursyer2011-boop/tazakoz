@@ -329,16 +329,24 @@ export type Database = {
           birth_date: string | null
           city: string
           created_at: string
+          doc_back_url: string | null
+          doc_front_url: string | null
+          doc_number: string
+          doc_type: string
           experience: string
+          father_name: string
           full_name: string
           has_transport: boolean
           id: string
+          iin: string
+          mother_name: string
           phone: string
           region: string
           region_code: string
           review_note: string
           reviewed_at: string | null
           reviewed_by: string | null
+          selfie_url: string | null
           status: string
           telegram_notified_at: string | null
           user_id: string
@@ -348,16 +356,24 @@ export type Database = {
           birth_date?: string | null
           city?: string
           created_at?: string
+          doc_back_url?: string | null
+          doc_front_url?: string | null
+          doc_number?: string
+          doc_type?: string
           experience?: string
+          father_name?: string
           full_name: string
           has_transport?: boolean
           id?: string
+          iin?: string
+          mother_name?: string
           phone: string
           region?: string
           region_code?: string
           review_note?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selfie_url?: string | null
           status?: string
           telegram_notified_at?: string | null
           user_id: string
@@ -367,16 +383,24 @@ export type Database = {
           birth_date?: string | null
           city?: string
           created_at?: string
+          doc_back_url?: string | null
+          doc_front_url?: string | null
+          doc_number?: string
+          doc_type?: string
           experience?: string
+          father_name?: string
           full_name?: string
           has_transport?: boolean
           id?: string
+          iin?: string
+          mother_name?: string
           phone?: string
           region?: string
           region_code?: string
           review_note?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selfie_url?: string | null
           status?: string
           telegram_notified_at?: string | null
           user_id?: string
