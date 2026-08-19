@@ -69,7 +69,7 @@ function AuthScreen() {
   async function social(provider: "google" | "apple") {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/auth/callback`,
     });
     setBusy(false);
     if (result.error) {
@@ -97,7 +97,7 @@ function AuthScreen() {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
             data: { full_name: fullName.trim(), phone: phone.trim(), city },
           },
         });
@@ -162,7 +162,7 @@ function AuthScreen() {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     setBusy(false);
     if (error) {
@@ -257,6 +257,7 @@ function AuthScreen() {
             disabled={busy}
             onClick={() => social("google")}
           >
+            {busy ? <LoaderCircle className="animate-spin" /> : null}
             Войти через Google
           </Button>
           <Button
@@ -265,6 +266,7 @@ function AuthScreen() {
             disabled={busy}
             onClick={() => social("apple")}
           >
+            {busy ? <LoaderCircle className="animate-spin" /> : null}
             Войти через Apple
           </Button>
         </div>
@@ -350,6 +352,7 @@ function AuthScreen() {
             disabled={busy}
             className="bg-brand-gradient shadow-brand-glow h-12 w-full rounded-xl text-base font-semibold text-primary-foreground"
           >
+            {busy ? <LoaderCircle className="animate-spin" /> : null}
             {mode === "signup" ? "Зарегистрироваться" : "Войти"}
           </Button>
         </form>
