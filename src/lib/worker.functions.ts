@@ -36,6 +36,24 @@ const ReviewInput = z.object({
 
 const TakeInput = z.object({ reportId: z.string().uuid() });
 
+const DOC_LABELS: Record<string, string> = {
+  id_card: "Удостоверение личности",
+  passport: "Паспорт",
+  birth_certificate: "Свидетельство о рождении",
+  none: "Документ не предоставлен",
+};
+
+function calculateAge(birthDate: string): number | null {
+  const born = new Date(`${birthDate}T00:00:00Z`);
+  if (Number.isNaN(born.getTime())) return null;
+  const now = new Date();
+  if (born.getTime() > now.getTime()) return null;
+  let age = now.getUTCFullYear() - born.getUTCFullYear();
+  const monthDiff = now.getUTCMonth() - born.getUTCMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getUTCDate() < born.getUTCDate())) age -= 1;
+  return age;
+}
+
 const CompleteInput = z.object({
   reportId: z.string().uuid(),
   afterPhotoPath: z.string().min(1),
@@ -47,21 +65,43 @@ export const applyAsWorker = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => ApplyInput.parse(data))
   .handler(async ({ data, context }) => {
+    const age = calculateAge(data.birthDate);
+    if (age === null) throw new Error("Некорректная дата рождения");
+    if (age < 16) throw new Error("Заявки принимаются с 16 лет");
+    const isMinor = age < 18;
+    if (isMinor) {
+      if (data.parentFullName.trim().length < 3) throw new Error("Укажите ФИО родителя или законного представителя");
+      if (data.parentContact.trim().length < 5) throw new Error("Укажите контакт родителя или законного представителя");
+      if (!data.parentConsent) throw new Error("Требуется согласие родителя или законного представителя");
+      if (!data.parentDocUrl) throw new Error("Загрузите документ родителя или законного представителя");
+    } else {
+      if (data.docType === "none" || data.docType === "birth_certificate") {
+        throw new Error("Для совершеннолетних нужен удостоверение личности или паспорт");
+      }
+      if (data.docNumber.trim().length < 4) throw new Error("Укажите номер документа");
+      if (!data.docFrontUrl) throw new Error("Загрузите фото документа");
+    }
+
     const { data: application, error } = await context.supabase
       .from("worker_applications")
       .insert({
         user_id: context.userId,
         full_name: data.fullName,
         phone: data.phone,
-        birth_date: data.birthDate || null,
+        birth_date: data.birthDate,
+        applicant_age: age,
         iin: data.iin,
         doc_type: data.docType,
         doc_number: data.docNumber,
-        doc_front_url: data.docFrontUrl,
+        doc_front_url: data.docFrontUrl || null,
         doc_back_url: data.docBackUrl || null,
         selfie_url: data.selfieUrl || null,
         father_name: data.fatherName,
         mother_name: data.motherName,
+        parent_full_name: data.parentFullName,
+        parent_contact: data.parentContact,
+        parent_consent: data.parentConsent,
+        parent_doc_url: data.parentDocUrl || null,
         region: data.region,
         region_code: data.regionCode,
         city: data.city,
@@ -78,10 +118,14 @@ export const applyAsWorker = createServerFn({ method: "POST" })
     }
 
     const telegram = await sendTelegram(
-      `🧹 <b>Новая заявка работника TAZA KÖZ</b>\n` +
+      `🧹 <b>Новая заявка ${isMinor ? "волонтёра 16–17 лет" : "работника"} TAZA KÖZ</b>\n` +
         `ФИО: ${data.fullName}\nТелефон: ${data.phone}\n` +
+        `Возраст: ${age}\n` +
         `ИИН: ${data.iin}\n` +
-        `Документ: ${data.docType === "passport" ? "Паспорт" : "Удостоверение личности"} № ${data.docNumber}\n` +
+        `Документ: ${DOC_LABELS[data.docType]} ${data.docNumber ? `№ ${data.docNumber}` : "—"}\n` +
+        (isMinor
+          ? `Представитель: ${data.parentFullName} (${data.parentContact}) — согласие получено\n`
+          : "") +
         `Родители: ${data.fatherName || "—"} / ${data.motherName || "—"}\n` +
         `Регион: ${data.region} · ${data.city}\n` +
         `Транспорт: ${data.hasTransport ? "есть" : "нет"}\n` +
