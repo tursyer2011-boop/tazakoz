@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { getEmailVerificationStatus, requestEmailOtp, verifyEmailOtp } from "@/lib/otp.functions";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "TAZA KÖZ — мониторинг чистоты водоёмов Казахстана" },
