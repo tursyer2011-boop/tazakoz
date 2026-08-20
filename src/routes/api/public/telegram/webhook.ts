@@ -65,6 +65,44 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         if (!callback?.data) return Response.json({ ok: true });
 
         const [scope, action, id] = callback.data.split(":");
+        if (scope === "payout" && id) {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const status = action === "paid" ? "paid" : "rejected";
+          const { data: payout } = await supabaseAdmin
+            .from("payout_requests")
+            .select("*")
+            .eq("id", id)
+            .maybeSingle();
+          if (!payout || payout.status !== "pending") {
+            await answerCallback(callback.id, "Заявка уже обработана");
+            return Response.json({ ok: true });
+          }
+          await supabaseAdmin
+            .from("payout_requests")
+            .update({ status, decided_at: new Date().toISOString() })
+            .eq("id", id);
+          if (status === "rejected") {
+            const { data: profile } = await supabaseAdmin
+              .from("profiles")
+              .select("credits")
+              .eq("id", payout.user_id)
+              .maybeSingle();
+            if (profile) {
+              await supabaseAdmin
+                .from("profiles")
+                .update({ credits: profile.credits + payout.credits })
+                .eq("id", payout.user_id);
+            }
+            await supabaseAdmin.from("credit_transactions").insert({
+              user_id: payout.user_id,
+              amount: payout.credits,
+              kind: "payout_refund",
+              note: "Возврат кредитов: выплата отклонена",
+            });
+          }
+          await answerCallback(callback.id, status === "paid" ? "Отмечено как выплачено" : "Отклонено, кредиты возвращены");
+          return Response.json({ ok: true });
+        }
         if (scope !== "wapp" || !id) return Response.json({ ok: true });
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
