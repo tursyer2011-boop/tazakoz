@@ -578,3 +578,121 @@ function WorkerTasks({ userId }: { userId: string }) {
     </div>
   );
 }
+
+/** Team card: ID, depot, credit balance and captain tools. */
+function MyTeamCard() {
+  const load = useServerFn(getMyTeam);
+  const award = useServerFn(awardResidentCredits);
+  const askCredits = useServerFn(requestTeamCredits);
+  const queryClient = useQueryClient();
+  const [amounts, setAmounts] = useState<Record<string, number>>({});
+  const [busy, setBusy] = useState(false);
+
+  const team = useQuery({ queryKey: ["my-team"], queryFn: () => load({}), refetchInterval: 30_000 });
+
+  if (team.isLoading) return <LoaderCircle className="mx-auto size-5 animate-spin text-primary" />;
+  if (!team.data)
+    return (
+      <p className="glass-card rounded-3xl p-5 text-center text-sm text-muted-foreground">
+        Вы ещё не закреплены за пунктом назначения. Команда назначается автоматически после одобрения анкеты.
+      </p>
+    );
+
+  const { team: t, depot, isCaptain, memberCount, calls, pendingRequest } = team.data;
+
+  return (
+    <section className="space-y-3">
+      <div className="glass-card space-y-2 rounded-3xl p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">ID команды</p>
+            <p className="text-2xl font-semibold tracking-widest text-brand-gradient">{t.team_code}</p>
+          </div>
+          <span className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-sm">
+            <Coins className="size-4 text-primary" /> {t.credits_balance}
+          </span>
+        </div>
+        <p className="flex items-center gap-1 text-sm text-muted-foreground">
+          <MapPin className="size-4" /> {depot?.name ?? "—"} · {depot?.city ?? ""} ({depot?.code ?? "—"})
+        </p>
+        <p className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Users className="size-4" /> {memberCount}/4 в команде · {isCaptain ? "вы капитан" : "работник"}
+        </p>
+        {isCaptain && (
+          <Button
+            variant="secondary"
+            className="h-11 w-full rounded-xl"
+            disabled={pendingRequest || busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await askCredits({});
+                toast.success("Запрос отправлен администратору");
+                await queryClient.invalidateQueries({ queryKey: ["my-team"] });
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Ошибка");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {pendingRequest ? "Запрос на рассмотрении" : "Запросить кредиты"}
+          </Button>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-sm font-medium">Вызовы вашего пункта ({calls.length})</p>
+        {calls.length === 0 && (
+          <p className="glass-card rounded-3xl p-4 text-center text-sm text-muted-foreground">
+            Пока нет вызовов рядом с вашим пунктом
+          </p>
+        )}
+        {calls.map((call) => (
+          <article key={call.id} className="glass-card space-y-2 rounded-3xl p-4">
+            <p className="text-sm font-medium">{call.address || call.water_body || "Вызов"}</p>
+            <p className="text-xs text-muted-foreground">
+              {REPORT_STATUS_LABELS[call.status] ?? call.status} ·{" "}
+              {SEVERITY[(call.severity as Severity) ?? "low"].label}
+            </p>
+            {isCaptain && (
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  max={15}
+                  value={amounts[call.id] ?? 10}
+                  onChange={(e) =>
+                    setAmounts((prev) => ({ ...prev, [call.id]: Number(e.target.value) }))
+                  }
+                  className="h-10 w-24"
+                  aria-label="Сумма кредитов жителю"
+                />
+                <Button
+                  className="h-10 flex-1 rounded-xl"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      await award({ data: { reportId: call.id, amount: amounts[call.id] ?? 10 } });
+                      toast.success("Кредиты отправлены жителю");
+                      await queryClient.invalidateQueries({ queryKey: ["my-team"] });
+                    } catch (error) {
+                      toast.error(error instanceof Error ? error.message : "Ошибка");
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  <span className="flex items-center gap-2">
+                    <Send className="size-4" /> Наградить (макс. 15)
+                  </span>
+                </Button>
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
