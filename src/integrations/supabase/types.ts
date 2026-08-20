@@ -87,6 +87,47 @@ export type Database = {
           },
         ]
       }
+      credit_requests: {
+        Row: {
+          amount: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          requested_by: string
+          status: string
+          team_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          requested_by: string
+          status?: string
+          team_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          requested_by?: string
+          status?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_requests_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_transactions: {
         Row: {
           amount: number
@@ -127,6 +168,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      depots: {
+        Row: {
+          active: boolean
+          city: string
+          code: string
+          created_at: string
+          id: string
+          lat: number
+          lng: number
+          name: string
+          region: string
+          region_code: string
+        }
+        Insert: {
+          active?: boolean
+          city?: string
+          code: string
+          created_at?: string
+          id?: string
+          lat: number
+          lng: number
+          name: string
+          region?: string
+          region_code?: string
+        }
+        Update: {
+          active?: boolean
+          city?: string
+          code?: string
+          created_at?: string
+          id?: string
+          lat?: number
+          lng?: number
+          name?: string
+          region?: string
+          region_code?: string
+        }
+        Relationships: []
       }
       email_delivery_log: {
         Row: {
@@ -202,6 +282,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_activated_at: string | null
+          admin_city: string
+          admin_region: string
+          admin_region_code: string
           approved_count: number
           avatar_url: string | null
           birth_date: string | null
@@ -229,6 +313,10 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          admin_activated_at?: string | null
+          admin_city?: string
+          admin_region?: string
+          admin_region_code?: string
           approved_count?: number
           avatar_url?: string | null
           birth_date?: string | null
@@ -256,6 +344,10 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          admin_activated_at?: string | null
+          admin_city?: string
+          admin_region?: string
+          admin_region_code?: string
           approved_count?: number
           avatar_url?: string | null
           birth_date?: string | null
@@ -296,13 +388,16 @@ export type Database = {
           comment: string
           created_at: string
           credits_awarded: number
+          depot_id: string | null
           id: string
           lat: number
           lng: number
           photo_url: string
           region: string
+          region_code: string
           severity: string
           status: string
+          team_id: string | null
           updated_at: string
           user_id: string
           verified_at: string | null
@@ -320,13 +415,16 @@ export type Database = {
           comment?: string
           created_at?: string
           credits_awarded?: number
+          depot_id?: string | null
           id?: string
           lat: number
           lng: number
           photo_url: string
           region?: string
+          region_code?: string
           severity?: string
           status?: string
+          team_id?: string | null
           updated_at?: string
           user_id: string
           verified_at?: string | null
@@ -344,20 +442,159 @@ export type Database = {
           comment?: string
           created_at?: string
           credits_awarded?: number
+          depot_id?: string | null
           id?: string
           lat?: number
           lng?: number
           photo_url?: string
           region?: string
+          region_code?: string
           severity?: string
           status?: string
+          team_id?: string | null
           updated_at?: string
           user_id?: string
           verified_at?: string | null
           water_body?: string
           worker_reward?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reports_depot_id_fkey"
+            columns: ["depot_id"]
+            isOneToOne: false
+            referencedRelation: "depots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          id: string
+          is_captain: boolean
+          joined_at: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_captain?: boolean
+          joined_at?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_captain?: boolean
+          joined_at?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_positions: {
+        Row: {
+          lat: number
+          lng: number
+          status: string
+          target_report_id: string | null
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          lat: number
+          lng: number
+          status?: string
+          target_report_id?: string | null
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          lat?: number
+          lng?: number
+          status?: string
+          target_report_id?: string | null
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_positions_target_report_id_fkey"
+            columns: ["target_report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_positions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          admin_topups_today: number
+          captain_id: string | null
+          created_at: string
+          credits_balance: number
+          daily_limit: number
+          depot_id: string
+          id: string
+          refill_date: string
+          region_code: string
+          team_code: string
+        }
+        Insert: {
+          admin_topups_today?: number
+          captain_id?: string | null
+          created_at?: string
+          credits_balance?: number
+          daily_limit?: number
+          depot_id: string
+          id?: string
+          refill_date?: string
+          region_code?: string
+          team_code: string
+        }
+        Update: {
+          admin_topups_today?: number
+          captain_id?: string | null
+          created_at?: string
+          credits_balance?: number
+          daily_limit?: number
+          depot_id?: string
+          id?: string
+          refill_date?: string
+          region_code?: string
+          team_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_depot_id_fkey"
+            columns: ["depot_id"]
+            isOneToOne: false
+            referencedRelation: "depots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       telegram_admin_chats: {
         Row: {

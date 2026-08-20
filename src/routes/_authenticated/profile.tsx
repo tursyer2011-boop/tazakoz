@@ -120,7 +120,7 @@ function ProfilePage() {
         </Link>
         {isStaff && (
           <Link
-            to="/admin"
+            to="/admin-panel"
             className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm font-medium"
           >
             <ShieldCheck className="size-5 text-primary" strokeWidth={1.6} /> Админ-панель

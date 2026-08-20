@@ -2,18 +2,20 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { LoaderCircle, ShieldCheck, Users, Trash2, Coins, ClipboardList, MailCheck } from "lucide-react";
+import { LoaderCircle, ShieldCheck, Users, Trash2, Coins, ClipboardList, MailCheck, MapPin, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole, type AppRole } from "@/hooks/useProfile";
 import { adjustCredits, getAdminOverview, getEmailDiagnostics, setUserRole } from "@/lib/admin.functions";
 import { reviewApplication } from "@/lib/worker.functions";
+import { getAdminScope, getTeamActivity, grantTeamCredits } from "@/lib/ops.functions";
+import { OpsMap } from "@/components/OpsMap";
 import { APPLICATION_STATUS_LABELS } from "@/lib/credits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export const Route = createFileRoute("/_authenticated/admin")({
+export const Route = createFileRoute("/_authenticated/admin-panel")({
   head: () => ({
     meta: [
       { title: "Админ-панель — TAZA KÖZ" },
@@ -56,7 +58,13 @@ function AdminPage() {
     <main className="mx-auto max-w-lg space-y-5 px-4 py-6">
       <h1 className="text-xl font-semibold">Админ-панель</h1>
       <Tabs defaultValue="apps">
-        <TabsList className="grid w-full grid-cols-4 rounded-xl">
+        <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl">
+          <TabsTrigger value="map" disabled={!isAdmin}>
+            Карта
+          </TabsTrigger>
+          <TabsTrigger value="id" disabled={!isAdmin}>
+            ID
+          </TabsTrigger>
           <TabsTrigger value="apps">Заявки</TabsTrigger>
           <TabsTrigger value="reports">Жалобы</TabsTrigger>
           <TabsTrigger value="users" disabled={!isAdmin}>
@@ -66,6 +74,12 @@ function AdminPage() {
             Почта
           </TabsTrigger>
         </TabsList>
+        <TabsContent value="map" className="mt-4">
+          {isAdmin ? <RegionMap /> : null}
+        </TabsContent>
+        <TabsContent value="id" className="mt-4">
+          {isAdmin ? <TeamLookup /> : null}
+        </TabsContent>
         <TabsContent value="apps" className="mt-4">
           <Applications />
         </TabsContent>
@@ -80,6 +94,182 @@ function AdminPage() {
         </TabsContent>
       </Tabs>
     </main>
+  );
+}
+
+function RegionMap() {
+  const load = useServerFn(getAdminScope);
+  const grant = useServerFn(grantTeamCredits);
+  const qc = useQueryClient();
+  const scope = useQuery({ queryKey: ["admin-scope"], queryFn: () => load({}), refetchInterval: 20_000 });
+
+  if (scope.isLoading) return <LoaderCircle className="mx-auto size-5 animate-spin text-primary" />;
+  if (scope.error)
+    return (
+      <p className="glass-card rounded-3xl p-5 text-center text-sm text-muted-foreground">
+        Область администратора не назначена. Пройдите активацию на странице /admin.
+      </p>
+    );
+
+  const data = scope.data!;
+  const depots = data.depots.filter((d) => d.lat != null && d.lng != null);
+  const center = depots.length
+    ? {
+        lat: depots.reduce((s, d) => s + d.lat, 0) / depots.length,
+        lng: depots.reduce((s, d) => s + d.lng, 0) / depots.length,
+      }
+    : { lat: 48.02, lng: 66.92 };
+  const teamByIdCode = new Map(data.teams.map((t) => [t.id, t.team_code]));
+
+  return (
+    <div className="space-y-3">
+      <div className="glass-card flex items-center gap-2 rounded-2xl p-3 text-sm">
+        <MapPin className="size-4 text-primary" />
+        <span>
+          {data.scope.admin_region} · {data.scope.admin_city} · пунктов: {depots.length} · команд: {data.teams.length}
+        </span>
+      </div>
+      <OpsMap
+        depots={depots}
+        teams={data.positions.map((p) => ({ ...p, code: teamByIdCode.get(p.team_id) ?? "" }))}
+        calls={data.reports.filter((r) => r.lat != null && r.lng != null)}
+        center={center}
+      />
+      {data.requests.length > 0 && (
+        <div className="glass-card space-y-2 rounded-3xl p-4">
+          <p className="text-sm font-medium">Запросы кредитов</p>
+          {data.requests.map((r) => (
+            <div key={r.id} className="flex items-center justify-between text-sm">
+              <span>
+                Команда {teamByIdCode.get(r.team_id) ?? "—"} · {r.amount} кредитов
+              </span>
+              <Button
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await grant({ data: { teamId: r.team_id, amount: r.amount, requestId: r.id } });
+                    toast.success("Кредиты выданы");
+                    void qc.invalidateQueries({ queryKey: ["admin-scope"] });
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : "Ошибка");
+                  }
+                }}
+              >
+                Выдать
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TeamLookup() {
+  const lookup = useServerFn(getTeamActivity);
+  const grant = useServerFn(grantTeamCredits);
+  const loadScope = useServerFn(getAdminScope);
+  const [code, setCode] = useState("");
+  const [active, setActive] = useState("");
+  const scope = useQuery({ queryKey: ["admin-scope"], queryFn: () => loadScope({}) });
+  const activity = useQuery({
+    queryKey: ["team-activity", active],
+    queryFn: () => lookup({ data: { teamCode: active } }),
+    enabled: active.length > 0,
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <Input
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="Введите ID команды"
+          className="flex-1"
+        />
+        <Button onClick={() => setActive(code.trim())} aria-label="Найти команду по ID">
+          <Search className="size-4" />
+        </Button>
+      </div>
+
+      <div className="glass-card space-y-1 rounded-3xl p-4">
+        <p className="text-sm font-medium">Все ID области</p>
+        <div className="flex flex-wrap gap-2 pt-1">
+          {(scope.data?.teams ?? []).map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => {
+                setCode(t.team_code);
+                setActive(t.team_code);
+              }}
+              className="neon-ring rounded-full px-3 py-1 text-xs"
+            >
+              {t.team_code} · {t.credits_balance}
+            </button>
+          ))}
+          {(scope.data?.teams ?? []).length === 0 && (
+            <span className="text-xs text-muted-foreground">Команд в области пока нет</span>
+          )}
+        </div>
+      </div>
+
+      {activity.isFetching && <LoaderCircle className="mx-auto size-5 animate-spin text-primary" />}
+      {activity.error && (
+        <p className="text-center text-sm text-destructive">
+          {activity.error instanceof Error ? activity.error.message : "Не найдено"}
+        </p>
+      )}
+      {activity.data && (
+        <div className="glass-card space-y-3 rounded-3xl p-4 text-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-base font-semibold">ID {activity.data.team.team_code}</p>
+            <span className="flex items-center gap-1 text-primary">
+              <Coins className="size-4" /> {activity.data.team.credits_balance}
+            </span>
+          </div>
+          <p className="text-muted-foreground">
+            Пункт: {activity.data.depot?.name ?? "—"} ({activity.data.depot?.code ?? "—"}) ·{" "}
+            {activity.data.depot?.city ?? ""}
+          </p>
+          <p className="text-muted-foreground">
+            Статус: {activity.data.position?.status ?? "на пункте"} · выдано сегодня: {activity.data.creditsGiven}{" "}
+            кредитов
+          </p>
+          <div>
+            <p className="font-medium">Состав ({activity.data.members.length}/4)</p>
+            {activity.data.members.map((m) => (
+              <p key={m.user_id} className="text-muted-foreground">
+                {m.profile?.full_name ?? m.user_id.slice(0, 8)} {m.is_captain ? "· капитан" : ""}
+              </p>
+            ))}
+          </div>
+          <div>
+            <p className="font-medium">Вызовы за сегодня</p>
+            {activity.data.reports.length === 0 && <p className="text-muted-foreground">Нет активности</p>}
+            {activity.data.reports.map((r) => (
+              <p key={r.id} className="text-muted-foreground">
+                {r.address || r.water_body || "Вызов"} · {r.status}
+              </p>
+            ))}
+          </div>
+          <Button
+            className="w-full"
+            onClick={async () => {
+              try {
+                await grant({ data: { teamId: activity.data!.team.id, amount: 1000 } });
+                toast.success("Выдана 1000 кредитов");
+                void activity.refetch();
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Ошибка");
+              }
+            }}
+          >
+            Выдать 1000 кредитов
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
 
