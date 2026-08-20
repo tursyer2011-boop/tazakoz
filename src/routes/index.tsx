@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, LoaderCircle, MailCheck, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/Logo";
@@ -10,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
+import { getEmailVerificationStatus, requestEmailOtp, verifyEmailOtp } from "@/lib/otp.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,6 +39,9 @@ const EMPTY_CODE = ["", "", "", "", "", ""];
 function AuthScreen() {
   const navigate = useNavigate();
   const { session, loading } = useSession();
+  const sendOtp = useServerFn(requestEmailOtp);
+  const checkOtp = useServerFn(verifyEmailOtp);
+  const checkStatus = useServerFn(getEmailVerificationStatus);
   const [mode, setMode] = useState<"signup" | "login" | "forgot">("login");
   const [step, setStep] = useState<"form" | "verify">("form");
 
@@ -57,8 +62,21 @@ function AuthScreen() {
   const codeInputs = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
-    if (!loading && session) navigate({ to: "/map", replace: true });
-  }, [loading, session, navigate]);
+    if (loading || !session || step === "verify") return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const status = await checkStatus({});
+        if (cancelled) return;
+        if (status.verified) navigate({ to: "/map", replace: true });
+      } catch {
+        navigate({ to: "/map", replace: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, session, step, navigate, checkStatus]);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -74,7 +92,12 @@ function AuthScreen() {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
-        navigate({ to: "/map", replace: true });
+        const status = await checkStatus({});
+        if (status.verified) {
+          navigate({ to: "/map", replace: true });
+          return;
+        }
+        await startVerification("login");
         return;
       }
 
@@ -139,18 +162,27 @@ function AuthScreen() {
       });
       if (error) throw error;
 
-      if (data.session) {
-        navigate({ to: "/map", replace: true });
-      } else {
-        setCode(EMPTY_CODE);
-        setStep("verify");
-        setResendSeconds(60);
-        toast.success("Код подтверждения отправлен на почту");
+      if (!data.session) {
+        await supabase.auth.signInWithPassword({ email: email.trim(), password });
       }
+      await startVerification("signup");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Ошибка авторизации");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function startVerification(purpose: "signup" | "login") {
+    setCode(EMPTY_CODE);
+    setStep("verify");
+    try {
+      await sendOtp({ data: { purpose } });
+      setResendSeconds(30);
+      toast.success("Код подтверждения отправлен на почту");
+    } catch (err) {
+      setResendSeconds(30);
+      toast.error(err instanceof Error ? err.message : "Не удалось отправить код");
     }
   }
 
@@ -180,8 +212,7 @@ function AuthScreen() {
     }
     setBusy(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token, type: "email" });
-      if (error) throw error;
+      await checkOtp({ data: { code: token, purpose: mode === "signup" ? "signup" : "login" } });
       toast.success("Почта подтверждена");
       navigate({ to: "/map", replace: true });
     } catch (err) {
@@ -195,9 +226,8 @@ function AuthScreen() {
     if (resendSeconds > 0 || busy) return;
     setBusy(true);
     try {
-      const { error } = await supabase.auth.resend({ type: "signup", email: email.trim() });
-      if (error) throw error;
-      setResendSeconds(60);
+      await sendOtp({ data: { purpose: mode === "signup" ? "signup" : "login" } });
+      setResendSeconds(30);
       toast.success("Новый код отправлен");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Не удалось отправить код");
