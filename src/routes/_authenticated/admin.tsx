@@ -2,11 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { LoaderCircle, ShieldCheck, Users, Trash2, Coins, ClipboardList } from "lucide-react";
+import { LoaderCircle, ShieldCheck, Users, Trash2, Coins, ClipboardList, MailCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole, type AppRole } from "@/hooks/useProfile";
-import { adjustCredits, getAdminOverview, setUserRole } from "@/lib/admin.functions";
+import { adjustCredits, getAdminOverview, getEmailDiagnostics, setUserRole } from "@/lib/admin.functions";
 import { reviewApplication } from "@/lib/worker.functions";
 import { APPLICATION_STATUS_LABELS } from "@/lib/credits";
 import { Button } from "@/components/ui/button";
@@ -56,11 +56,14 @@ function AdminPage() {
     <main className="mx-auto max-w-lg space-y-5 px-4 py-6">
       <h1 className="text-xl font-semibold">Админ-панель</h1>
       <Tabs defaultValue="apps">
-        <TabsList className="grid w-full grid-cols-3 rounded-xl">
+        <TabsList className="grid w-full grid-cols-4 rounded-xl">
           <TabsTrigger value="apps">Заявки</TabsTrigger>
           <TabsTrigger value="reports">Жалобы</TabsTrigger>
           <TabsTrigger value="users" disabled={!isAdmin}>
             Люди
+          </TabsTrigger>
+          <TabsTrigger value="email" disabled={!isAdmin}>
+            Почта
           </TabsTrigger>
         </TabsList>
         <TabsContent value="apps" className="mt-4">
@@ -72,8 +75,63 @@ function AdminPage() {
         <TabsContent value="users" className="mt-4">
           {isAdmin ? <UsersAdmin /> : null}
         </TabsContent>
+        <TabsContent value="email" className="mt-4">
+          {isAdmin ? <EmailDiagnostics /> : null}
+        </TabsContent>
       </Tabs>
     </main>
+  );
+}
+
+function EmailDiagnostics() {
+  const load = useServerFn(getEmailDiagnostics);
+  const diag = useQuery({ queryKey: ["email-diagnostics"], queryFn: () => load({}), refetchInterval: 30_000 });
+
+  if (diag.isLoading) return <LoaderCircle className="mx-auto size-5 animate-spin text-primary" />;
+  if (diag.error)
+    return <p className="glass-card rounded-3xl p-5 text-center text-sm text-muted-foreground">Нет доступа</p>;
+  const data = diag.data!;
+
+  return (
+    <div className="space-y-3">
+      <div className="glass-card space-y-2 rounded-3xl p-4 text-sm">
+        <p className="flex items-center gap-2 font-medium">
+          <MailCheck className="size-4 text-primary" /> Диагностика писем
+        </p>
+        <p className="text-muted-foreground">
+          Провайдер: Resend · {data.providerConfigured ? "ключ подключён" : "ключ не настроен"}
+        </p>
+        <p className="text-muted-foreground">Отправитель: {data.sender}</p>
+        <p className="text-muted-foreground">
+          Последняя отправка:{" "}
+          {data.lastSend
+            ? `${data.lastSend.status}${data.lastSend.http_status ? ` (${data.lastSend.http_status})` : ""} · ${new Date(data.lastSend.created_at).toLocaleString("ru-RU")}`
+            : "—"}
+        </p>
+        <p className="text-muted-foreground">
+          Последняя проверка кода:{" "}
+          {data.lastVerify
+            ? `${data.lastVerify.status} · ${new Date(data.lastVerify.created_at).toLocaleString("ru-RU")}`
+            : "—"}
+        </p>
+        {data.lastSend?.error && (
+          <p className="rounded-xl bg-destructive/10 p-2 text-xs text-destructive">{data.lastSend.error}</p>
+        )}
+      </div>
+
+      <div className="glass-card space-y-2 rounded-3xl p-4 text-xs">
+        {data.events.length === 0 && <p className="text-center text-muted-foreground">Событий пока нет</p>}
+        {data.events.map((e) => (
+          <div key={e.id} className="flex items-center justify-between gap-2 border-b border-border/40 pb-1 last:border-0">
+            <span className="text-muted-foreground">{e.email_masked}</span>
+            <span>
+              {e.event} · {e.status}
+            </span>
+            <span className="text-muted-foreground">{new Date(e.created_at).toLocaleTimeString("ru-RU")}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
