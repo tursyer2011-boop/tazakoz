@@ -418,7 +418,12 @@ function DocUpload({
       <div className="flex items-center justify-between">
         <span className="text-[11px] text-muted-foreground">{label}</span>
         {value && (
-          <button type="button" onClick={() => onChange(null)} className="text-muted-foreground">
+          <button
+            type="button"
+            aria-label={`Удалить файл: ${label}`}
+            onClick={() => onChange(null)}
+            className="text-muted-foreground"
+          >
             <X className="size-3" />
           </button>
         )}

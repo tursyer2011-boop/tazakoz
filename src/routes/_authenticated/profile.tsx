@@ -81,6 +81,7 @@ function ProfilePage() {
 
   return (
     <main className="mx-auto max-w-lg space-y-4 px-4 py-6">
+      <h1 className="sr-only">Профиль пользователя</h1>
       <div className="flex items-center gap-3">
         <Avatar className="size-14">
           <AvatarImage src={profile?.avatar_url ?? undefined} alt={name} />

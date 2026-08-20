@@ -134,6 +134,7 @@ function MapPage() {
         <div className="pointer-events-auto flex justify-center">
           <Logo compact />
         </div>
+        <h1 className="sr-only">Карта загрязнений водоёмов Казахстана</h1>
         <div className="pointer-events-auto flex gap-2">
           <Select value={region} onValueChange={setRegion}>
             <SelectTrigger className="h-10 flex-1 rounded-xl bg-card">
