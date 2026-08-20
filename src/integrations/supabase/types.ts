@@ -128,6 +128,78 @@ export type Database = {
           },
         ]
       }
+      email_delivery_log: {
+        Row: {
+          created_at: string
+          email_masked: string
+          error: string
+          event: string
+          http_status: number | null
+          id: string
+          provider: string
+          purpose: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email_masked: string
+          error?: string
+          event: string
+          http_status?: number | null
+          id?: string
+          provider?: string
+          purpose?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email_masked?: string
+          error?: string
+          event?: string
+          http_status?: number | null
+          id?: string
+          provider?: string
+          purpose?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      email_otps: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          purpose: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          purpose?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          purpose?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           approved_count: number
@@ -139,6 +211,7 @@ export type Database = {
           consent_terms_at: string | null
           created_at: string
           credits: number
+          email_verified_at: string | null
           first_name: string
           full_name: string
           id: string
@@ -165,6 +238,7 @@ export type Database = {
           consent_terms_at?: string | null
           created_at?: string
           credits?: number
+          email_verified_at?: string | null
           first_name?: string
           full_name?: string
           id: string
@@ -191,6 +265,7 @@ export type Database = {
           consent_terms_at?: string | null
           created_at?: string
           credits?: number
+          email_verified_at?: string | null
           first_name?: string
           full_name?: string
           id?: string
@@ -326,6 +401,7 @@ export type Database = {
       worker_applications: {
         Row: {
           about: string
+          applicant_age: number | null
           birth_date: string | null
           city: string
           created_at: string
@@ -340,6 +416,10 @@ export type Database = {
           id: string
           iin: string
           mother_name: string
+          parent_consent: boolean
+          parent_contact: string
+          parent_doc_url: string | null
+          parent_full_name: string
           phone: string
           region: string
           region_code: string
@@ -353,6 +433,7 @@ export type Database = {
         }
         Insert: {
           about?: string
+          applicant_age?: number | null
           birth_date?: string | null
           city?: string
           created_at?: string
@@ -367,6 +448,10 @@ export type Database = {
           id?: string
           iin?: string
           mother_name?: string
+          parent_consent?: boolean
+          parent_contact?: string
+          parent_doc_url?: string | null
+          parent_full_name?: string
           phone: string
           region?: string
           region_code?: string
@@ -380,6 +465,7 @@ export type Database = {
         }
         Update: {
           about?: string
+          applicant_age?: number | null
           birth_date?: string | null
           city?: string
           created_at?: string
@@ -394,6 +480,10 @@ export type Database = {
           id?: string
           iin?: string
           mother_name?: string
+          parent_consent?: boolean
+          parent_contact?: string
+          parent_doc_url?: string | null
+          parent_full_name?: string
           phone?: string
           region?: string
           region_code?: string
