@@ -74,7 +74,7 @@ function ProfilePage() {
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
-    navigate({ to: "/", replace: true });
+    navigate({ to: "/auth", replace: true });
   }
 
   const name = profile?.full_name || user?.email || "Пользователь";
@@ -111,13 +111,15 @@ function ProfilePage() {
         >
           <MessagesSquare className="size-5 text-primary" strokeWidth={1.6} /> Чат с координатором
         </Link>
-        <Link
-          to="/worker"
-          className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm font-medium"
-        >
-          <HardHat className="size-5 text-primary" strokeWidth={1.6} />{" "}
-          {hasRole(me?.roles, "worker", "captain") ? "Мои задания" : "Стать работником"}
-        </Link>
+        {!isStaff && (
+          <Link
+            to="/worker"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm font-medium"
+          >
+            <HardHat className="size-5 text-primary" strokeWidth={1.6} />{" "}
+            {hasRole(me?.roles, "worker", "captain") ? "Мои задания" : "Стать работником"}
+          </Link>
+        )}
         {isStaff && (
           <Link
             to="/admin-panel"
