@@ -599,6 +599,7 @@ function MyTeamCard() {
     );
 
   const { team: t, depot, isCaptain, memberCount, calls, pendingRequest } = team.data;
+  if (!t) return null;
 
   return (
     <section className="space-y-3">
