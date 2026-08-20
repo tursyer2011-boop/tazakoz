@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CheckCircle2, Clock, HardHat, IdCard, LoaderCircle, MapPin, Upload, X } from "lucide-react";
+import { CheckCircle2, Clock, Coins, HardHat, IdCard, LoaderCircle, MapPin, Send, Upload, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole } from "@/hooks/useProfile";
 import { applyAsWorker, completeTask, takeTask } from "@/lib/worker.functions";
+import { awardResidentCredits, getMyTeam, requestTeamCredits } from "@/lib/ops.functions";
 import { resizeImage, signedPhotoUrl, urlToDataUrl } from "@/lib/photos";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 import { APPLICATION_STATUS_LABELS, REPORT_STATUS_LABELS } from "@/lib/credits";
@@ -71,7 +72,10 @@ function WorkerPage() {
       </header>
 
       {isWorker ? (
-        <WorkerTasks userId={me!.user.id} />
+        <>
+          <MyTeamCard />
+          <WorkerTasks userId={me!.user.id} />
+        </>
       ) : application.isLoading ? (
         <LoaderCircle className="mx-auto size-5 animate-spin text-primary" />
       ) : application.data && application.data.status === "pending" ? (
