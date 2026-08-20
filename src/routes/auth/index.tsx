@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
+import { WheelDatePicker } from "@/components/WheelDatePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { getEmailVerificationStatus, requestEmailOtp, verifyEmailOtp } from "@/lib/otp.functions";
