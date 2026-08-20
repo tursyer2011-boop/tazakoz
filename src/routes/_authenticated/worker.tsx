@@ -310,7 +310,9 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
           <DocUpload label="Селфи с док." userId={me?.user.id} value={selfie} onChange={setSelfie} />
         </div>
         <p className="text-[11px] text-muted-foreground">
-          Документы видны только вам и координаторам TAZA KÖZ.
+          {isMinor
+            ? "Для 16–17 лет документ загружается, только если он у вас есть. Файлы видны вам и координаторам TAZA KÖZ."
+            : "Документы видны только вам и координаторам TAZA KÖZ."}
         </p>
       </div>
 
@@ -340,7 +342,7 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
       </label>
       <Button
         type="submit"
-        disabled={busy}
+        disabled={busy || tooYoung}
         className="bg-brand-gradient shadow-brand-glow h-12 w-full rounded-xl text-base font-semibold text-primary-foreground"
       >
         {busy ? <LoaderCircle className="size-5 animate-spin" /> : "Отправить заявку"}

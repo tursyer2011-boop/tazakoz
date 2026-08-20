@@ -8,14 +8,13 @@ function safeEqual(a: string, b: string): boolean {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
-const ADMIN_PASSWORD = "TazaKoz.online.job";
-
 export const Route = createFileRoute("/api/public/telegram/webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         const botToken = process.env["TELEGRAM_BOT_TOKEN"];
         if (!botToken) return new Response("Not configured", { status: 503 });
+        const adminPassword = process.env["TELEGRAM_BOT_ACCESS_PASSWORD"] ?? "";
 
         const expected = createHash("sha256")
           .update(`telegram-webhook:${botToken}`)
@@ -42,7 +41,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
             return Response.json({ ok: true });
           }
 
-          if (text.replace(/^\/code\s+/i, "") === ADMIN_PASSWORD) {
+          if (adminPassword && text.replace(/^\/code\s+/i, "") === adminPassword) {
             const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
             await supabaseAdmin
               .from("telegram_admin_chats")
