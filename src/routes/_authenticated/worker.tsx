@@ -220,9 +220,51 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="w-birth">Дата рождения</Label>
-          <Input id="w-birth" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="h-11 rounded-xl" />
+          <Input
+            id="w-birth"
+            type="date"
+            required
+            max={new Date().toISOString().slice(0, 10)}
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
+            className="h-11 rounded-xl"
+          />
+          {age !== null && (
+            <span className={`text-[11px] ${tooYoung ? "text-destructive" : "text-muted-foreground"}`}>
+              Возраст: {age}
+            </span>
+          )}
         </div>
       </div>
+
+      {tooYoung && (
+        <p className="rounded-2xl bg-destructive/10 p-3 text-sm text-destructive">
+          Подать заявку можно с 16 лет.
+        </p>
+      )}
+
+      {isMinor && (
+        <div className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+          <p className="text-sm font-medium">Родитель / законный представитель</p>
+          <div className="grid gap-1.5">
+            <Label htmlFor="w-parent-name">ФИО представителя</Label>
+            <Input id="w-parent-name" value={parentFullName} onChange={(e) => setParentFullName(e.target.value)} className="h-11 rounded-xl" maxLength={120} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="w-parent-contact">Телефон или e-mail представителя</Label>
+            <Input id="w-parent-contact" value={parentContact} onChange={(e) => setParentContact(e.target.value)} className="h-11 rounded-xl" maxLength={120} />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <DocUpload label="Документ представителя" userId={me?.user.id} value={parentDoc} onChange={setParentDoc} />
+          </div>
+          <label className="flex items-start gap-3 text-sm">
+            <Checkbox checked={parentConsent} onCheckedChange={(v) => setParentConsent(v === true)} className="mt-0.5" />
+            <span className="text-muted-foreground">
+              Родитель / законный представитель согласен на участие несовершеннолетнего в работах TAZA KÖZ.
+            </span>
+          </label>
+        </div>
+      )}
 
       <div className="space-y-3 rounded-2xl bg-secondary/30 p-3">
         <p className="flex items-center gap-2 text-sm font-medium">
@@ -308,6 +350,17 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
 }
 
 type UploadedDoc = { path: string; preview: string };
+
+function calculateAge(birthDate: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null;
+  const born = new Date(`${birthDate}T00:00:00Z`);
+  if (Number.isNaN(born.getTime()) || born.getTime() > Date.now()) return null;
+  const now = new Date();
+  let age = now.getUTCFullYear() - born.getUTCFullYear();
+  const monthDiff = now.getUTCMonth() - born.getUTCMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getUTCDate() < born.getUTCDate())) age -= 1;
+  return age;
+}
 
 function DocUpload({
   label,
