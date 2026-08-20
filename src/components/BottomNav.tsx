@@ -1,7 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Camera, Droplets, Home, Trophy, User } from "lucide-react";
+import { Camera, Droplets, HardHat, Home, ShieldCheck, Trophy, User } from "lucide-react";
+import { hasRole, useProfile } from "@/hooks/useProfile";
 
-const items = [
+const baseItems = [
   { to: "/map", label: "Главная", icon: Home },
   { to: "/rating", label: "Рейтинг", icon: Trophy },
   { to: "/report", label: "Жалоба", icon: Camera, center: true },
@@ -9,8 +10,30 @@ const items = [
   { to: "/profile", label: "Профиль", icon: User },
 ] as const;
 
+const staffItems = [
+  { to: "/map", label: "Главная", icon: Home },
+  { to: "/admin-panel", label: "Панель", icon: ShieldCheck },
+  { to: "/report", label: "Жалоба", icon: Camera, center: true },
+  { to: "/water", label: "Вода", icon: Droplets },
+  { to: "/profile", label: "Профиль", icon: User },
+] as const;
+
+const workerItems = [
+  { to: "/map", label: "Главная", icon: Home },
+  { to: "/worker", label: "Задания", icon: HardHat },
+  { to: "/report", label: "Жалоба", icon: Camera, center: true },
+  { to: "/rating", label: "Рейтинг", icon: Trophy },
+  { to: "/profile", label: "Профиль", icon: User },
+] as const;
+
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { data: me } = useProfile();
+  const items = hasRole(me?.roles, "admin", "moderator")
+    ? staffItems
+    : hasRole(me?.roles, "worker", "captain")
+      ? workerItems
+      : baseItems;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-[1000] border-t border-border bg-card/95 backdrop-blur">
