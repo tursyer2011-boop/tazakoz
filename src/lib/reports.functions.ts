@@ -52,6 +52,31 @@ export const submitReport = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
 
+    // Route the call to the closest depot (and its team) so only the nearest crew sees it.
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { nearestDepot } = await import("@/lib/teams.server");
+      const nearest = await nearestDepot(supabaseAdmin, data.lat, data.lng);
+      if (nearest) {
+        const { data: team } = await supabaseAdmin
+          .from("teams")
+          .select("id")
+          .eq("depot_id", nearest.depot.id)
+          .limit(1)
+          .maybeSingle();
+        await supabaseAdmin
+          .from("reports")
+          .update({
+            depot_id: nearest.depot.id,
+            team_id: team?.id ?? null,
+            region_code: nearest.depot.region_code,
+          })
+          .eq("id", report.id);
+      }
+    } catch (routingError) {
+      console.error("[reports] depot routing failed", routingError);
+    }
+
     if (approved) {
       const { data: profile } = await context.supabase
         .from("profiles")

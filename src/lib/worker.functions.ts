@@ -181,6 +181,18 @@ export const reviewApplication = createServerFn({ method: "POST" })
       await supabaseAdmin
         .from("user_roles")
         .upsert({ user_id: application.user_id, role: "worker" }, { onConflict: "user_id,role" });
+
+      const { assignWorkerToTeam } = await import("@/lib/teams.server");
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("lat, lng")
+        .eq("id", application.user_id)
+        .maybeSingle();
+      try {
+        await assignWorkerToTeam(supabaseAdmin, application.user_id, profile?.lat ?? null, profile?.lng ?? null);
+      } catch (assignError) {
+        console.error("[worker] team assignment failed", assignError);
+      }
     }
 
     return { status: data.decision };
