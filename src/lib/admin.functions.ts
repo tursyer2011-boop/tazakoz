@@ -83,6 +83,35 @@ export const setUserRole = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const getEmailDiagnostics = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Недостаточно прав");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: events } = await supabaseAdmin
+      .from("email_delivery_log")
+      .select("id, email_masked, purpose, provider, event, status, http_status, error, created_at")
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    const list = events ?? [];
+    const lastSend = list.find((e) => e.event === "send") ?? null;
+    const lastVerify = list.find((e) => e.event === "verify") ?? null;
+
+    return {
+      providerConfigured: Boolean(process.env["RESEND_API_KEY"]),
+      sender: process.env["RESEND_FROM_EMAIL"] ?? "no-reply@tazakoz.online",
+      lastSend,
+      lastVerify,
+      events: list,
+    };
+  });
+
 export const adjustCredits = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => CreditInput.parse(data))
