@@ -104,6 +104,10 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
   const [docNumber, setDocNumber] = useState("");
   const [fatherName, setFatherName] = useState("");
   const [motherName, setMotherName] = useState("");
+  const [parentFullName, setParentFullName] = useState("");
+  const [parentContact, setParentContact] = useState("");
+  const [parentConsent, setParentConsent] = useState(false);
+  const [parentDoc, setParentDoc] = useState<UploadedDoc | null>(null);
   const [docFront, setDocFront] = useState<UploadedDoc | null>(null);
   const [docBack, setDocBack] = useState<UploadedDoc | null>(null);
   const [selfie, setSelfie] = useState<UploadedDoc | null>(null);
@@ -112,6 +116,9 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
   const [about, setAbout] = useState("");
   const [hasTransport, setHasTransport] = useState(false);
   const [busy, setBusy] = useState(false);
+  const age = calculateAge(birthDate);
+  const isMinor = age !== null && age >= 16 && age < 18;
+  const tooYoung = age !== null && age < 16;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -120,17 +127,40 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
       toast.error("Заполните ФИО, телефон и место работы");
       return;
     }
+    if (age === null) {
+      toast.error("Укажите корректную дату рождения");
+      return;
+    }
+    if (tooYoung) {
+      toast.error("Заявки принимаются с 16 лет");
+      return;
+    }
     if (!/^\d{12}$/.test(iin.trim())) {
       toast.error("ИИН должен содержать 12 цифр");
       return;
     }
-    if (docNumber.trim().length < 4) {
-      toast.error("Укажите номер документа");
-      return;
-    }
-    if (!docFront) {
-      toast.error("Загрузите фото документа");
-      return;
+    if (!isMinor) {
+      if (docNumber.trim().length < 4) {
+        toast.error("Укажите номер документа");
+        return;
+      }
+      if (!docFront) {
+        toast.error("Загрузите фото документа");
+        return;
+      }
+    } else {
+      if (parentFullName.trim().length < 3 || parentContact.trim().length < 5) {
+        toast.error("Заполните данные родителя или законного представителя");
+        return;
+      }
+      if (!parentConsent) {
+        toast.error("Нужно согласие родителя или законного представителя");
+        return;
+      }
+      if (!parentDoc) {
+        toast.error("Загрузите документ родителя");
+        return;
+      }
     }
     setBusy(true);
     try {
@@ -138,15 +168,19 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
         data: {
           fullName: fullName.trim(),
           phone: phone.trim(),
-          birthDate: birthDate || undefined,
+          birthDate,
           iin: iin.trim(),
-          docType,
+          docType: isMinor && !docFront ? "none" : docType,
           docNumber: docNumber.trim(),
-          docFrontUrl: docFront.path,
+          docFrontUrl: docFront?.path ?? "",
           docBackUrl: docBack?.path ?? "",
           selfieUrl: selfie?.path ?? "",
           fatherName: fatherName.trim(),
           motherName: motherName.trim(),
+          parentFullName: parentFullName.trim(),
+          parentContact: parentContact.trim(),
+          parentConsent,
+          parentDocUrl: parentDoc?.path ?? "",
           region: place.regionName,
           regionCode: place.regionCode,
           city: place.settlement.name,
@@ -186,9 +220,51 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="w-birth">Дата рождения</Label>
-          <Input id="w-birth" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="h-11 rounded-xl" />
+          <Input
+            id="w-birth"
+            type="date"
+            required
+            max={new Date().toISOString().slice(0, 10)}
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
+            className="h-11 rounded-xl"
+          />
+          {age !== null && (
+            <span className={`text-[11px] ${tooYoung ? "text-destructive" : "text-muted-foreground"}`}>
+              Возраст: {age}
+            </span>
+          )}
         </div>
       </div>
+
+      {tooYoung && (
+        <p className="rounded-2xl bg-destructive/10 p-3 text-sm text-destructive">
+          Подать заявку можно с 16 лет.
+        </p>
+      )}
+
+      {isMinor && (
+        <div className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+          <p className="text-sm font-medium">Родитель / законный представитель</p>
+          <div className="grid gap-1.5">
+            <Label htmlFor="w-parent-name">ФИО представителя</Label>
+            <Input id="w-parent-name" value={parentFullName} onChange={(e) => setParentFullName(e.target.value)} className="h-11 rounded-xl" maxLength={120} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="w-parent-contact">Телефон или e-mail представителя</Label>
+            <Input id="w-parent-contact" value={parentContact} onChange={(e) => setParentContact(e.target.value)} className="h-11 rounded-xl" maxLength={120} />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <DocUpload label="Документ представителя" userId={me?.user.id} value={parentDoc} onChange={setParentDoc} />
+          </div>
+          <label className="flex items-start gap-3 text-sm">
+            <Checkbox checked={parentConsent} onCheckedChange={(v) => setParentConsent(v === true)} className="mt-0.5" />
+            <span className="text-muted-foreground">
+              Родитель / законный представитель согласен на участие несовершеннолетнего в работах TAZA KÖZ.
+            </span>
+          </label>
+        </div>
+      )}
 
       <div className="space-y-3 rounded-2xl bg-secondary/30 p-3">
         <p className="flex items-center gap-2 text-sm font-medium">
@@ -234,7 +310,9 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
           <DocUpload label="Селфи с док." userId={me?.user.id} value={selfie} onChange={setSelfie} />
         </div>
         <p className="text-[11px] text-muted-foreground">
-          Документы видны только вам и координаторам TAZA KÖZ.
+          {isMinor
+            ? "Для 16–17 лет документ загружается, только если он у вас есть. Файлы видны вам и координаторам TAZA KÖZ."
+            : "Документы видны только вам и координаторам TAZA KÖZ."}
         </p>
       </div>
 
@@ -264,7 +342,7 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
       </label>
       <Button
         type="submit"
-        disabled={busy}
+        disabled={busy || tooYoung}
         className="bg-brand-gradient shadow-brand-glow h-12 w-full rounded-xl text-base font-semibold text-primary-foreground"
       >
         {busy ? <LoaderCircle className="size-5 animate-spin" /> : "Отправить заявку"}
@@ -274,6 +352,17 @@ function ApplicationForm({ rejectedNote, onDone }: { rejectedNote: string; onDon
 }
 
 type UploadedDoc = { path: string; preview: string };
+
+function calculateAge(birthDate: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return null;
+  const born = new Date(`${birthDate}T00:00:00Z`);
+  if (Number.isNaN(born.getTime()) || born.getTime() > Date.now()) return null;
+  const now = new Date();
+  let age = now.getUTCFullYear() - born.getUTCFullYear();
+  const monthDiff = now.getUTCMonth() - born.getUTCMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getUTCDate() < born.getUTCDate())) age -= 1;
+  return age;
+}
 
 function DocUpload({
   label,
