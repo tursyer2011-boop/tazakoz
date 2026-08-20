@@ -1,10 +1,9 @@
 const RESEND_URL = "https://api.resend.com/emails";
 
 function maskEmail(email: string) {
-  const [name, domain] = email.split("@");
+  const [name = "", domain = ""] = email.split("@");
   if (!domain) return "***";
-  const visible = name.slice(0, 2);
-  return `${visible}${"*".repeat(Math.max(1, name.length - 2))}@${domain}`;
+  return `${name.slice(0, 2)}${"*".repeat(Math.max(1, name.length - 2))}@${domain}`;
 }
 
 async function logDelivery(entry: {
