@@ -280,6 +280,77 @@ export type Database = {
         }
         Relationships: []
       }
+      payout_requests: {
+        Row: {
+          amount_kzt: number
+          created_at: string
+          credits: number
+          decided_at: string | null
+          full_name: string
+          id: string
+          note: string | null
+          phone: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount_kzt: number
+          created_at?: string
+          credits: number
+          decided_at?: string | null
+          full_name: string
+          id?: string
+          note?: string | null
+          phone: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount_kzt?: number
+          created_at?: string
+          credits?: number
+          decided_at?: string | null
+          full_name?: string
+          id?: string
+          note?: string | null
+          phone?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      point_checkins: {
+        Row: {
+          created_at: string
+          depot_id: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          depot_id: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          depot_id?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_checkins_depot_id_fkey"
+            columns: ["depot_id"]
+            isOneToOne: false
+            referencedRelation: "depots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           admin_activated_at: string | null
