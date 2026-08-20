@@ -54,7 +54,7 @@ function AuthCallback() {
         if (data.session) {
           navigate({ to: "/map", replace: true });
         } else {
-          navigate({ to: "/", replace: true });
+          navigate({ to: "/auth", replace: true });
         }
       } catch (err) {
         if (cancelled) return;
@@ -76,7 +76,7 @@ function AuthCallback() {
           <p className="text-sm text-muted-foreground">{error}</p>
           <button
             className="mt-2 text-sm text-primary underline"
-            onClick={() => navigate({ to: "/", replace: true })}
+            onClick={() => navigate({ to: "/auth", replace: true })}
           >
             Вернуться ко входу
           </button>
