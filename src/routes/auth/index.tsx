@@ -333,15 +333,13 @@ function AuthScreen() {
                       <Input id="patronymic" value={patronymic} onChange={(e) => setPatronymic(e.target.value)} className="h-11 rounded-xl" maxLength={60} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="birth">Дата рождения</Label>
-                      <Input id="birth" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="h-11 rounded-xl" />
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="username">Никнейм</Label>
-                      <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="taza_user" className="h-11 rounded-xl" maxLength={30} />
-                    </div>
+                  <div className="grid gap-1.5">
+                    <Label>Дата рождения</Label>
+                    <WheelDatePicker value={birthDate} onChange={setBirthDate} />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="username">Никнейм</Label>
+                    <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="taza_user" className="h-11 rounded-xl" maxLength={30} />
                   </div>
                   <div className="grid gap-1.5">
                     <Label htmlFor="phone">Телефон</Label>
