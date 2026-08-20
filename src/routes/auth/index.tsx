@@ -13,22 +13,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { getEmailVerificationStatus, requestEmailOtp, verifyEmailOtp } from "@/lib/otp.functions";
 
-export const Route = createFileRoute("/auth")({
+export const Route = createFileRoute("/auth/")({
   head: () => ({
     meta: [
-      { title: "TAZA KÖZ — мониторинг чистоты водоёмов Казахстана" },
+      { title: "Вход и регистрация — TAZA KÖZ" },
       {
         name: "description",
         content:
-          "Фотографируй загрязнение водоёма, ИИ проверит фото, отметка появится на карте Казахстана. Kör. Habarla. Qorğa.",
+          "Создайте аккаунт TAZA KÖZ или войдите, чтобы сообщать о загрязнениях водоёмов Казахстана и получать Taza Credits.",
       },
-      { property: "og:title", content: "TAZA KÖZ — чистые водоёмы Казахстана" },
+      { property: "og:title", content: "Вход и регистрация — TAZA KÖZ" },
       {
         property: "og:description",
-        content: "Сообщай о загрязнениях воды, получай Taza Credits и следи за картой загрязнений.",
+        content: "Регистрация с подтверждением по коду на почту. Kör. Habarla. Qorğa.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AuthScreen,
