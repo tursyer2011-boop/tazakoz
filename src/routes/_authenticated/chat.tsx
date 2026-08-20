@@ -173,7 +173,7 @@ function ChatPage() {
           maxLength={2000}
           className="h-11 rounded-xl"
         />
-        <Button type="submit" disabled={sending} className="size-11 rounded-xl p-0">
+        <Button type="submit" aria-label="Отправить сообщение" disabled={sending} className="size-11 rounded-xl p-0">
           {sending ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}
         </Button>
       </form>
