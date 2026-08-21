@@ -1,6 +1,12 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { HardHat, LogOut, MessagesSquare, ShieldCheck } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { HardHat, LogOut, MessagesSquare, ShieldCheck, Wallet } from "lucide-react";
+import { KZT_PER_CREDIT, MIN_PAYOUT_CREDITS } from "@/lib/credits";
+import { requestPayout } from "@/lib/payouts.functions";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { useProfile, hasRole } from "@/hooks/useProfile";
@@ -77,6 +83,21 @@ function ProfilePage() {
     navigate({ to: "/auth", replace: true });
   }
 
+  const payouts = useQuery({
+    enabled: !!user,
+    queryKey: ["payouts", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payout_requests")
+        .select("id, credits, amount_kzt, status, created_at")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const name = profile?.full_name || user?.email || "Пользователь";
 
   return (
@@ -129,6 +150,33 @@ function ProfilePage() {
           </Link>
         )}
       </div>
+
+      <CashoutCard
+        credits={profile?.credits ?? 0}
+        fullName={profile?.full_name ?? ""}
+        phone={profile?.phone ?? ""}
+        onDone={() => {
+          void queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
+          void payouts.refetch();
+        }}
+      />
+
+      {(payouts.data ?? []).length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Заявки на вывод</p>
+          {(payouts.data ?? []).map((p) => (
+            <div key={p.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-3 text-sm">
+              <div>
+                <p>{p.amount_kzt} ₸ · {p.credits} кредитов</p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(p.created_at).toLocaleDateString("ru-RU")}
+                </p>
+              </div>
+              <span className="text-xs text-muted-foreground">{PAYOUT_STATUS[p.status] ?? p.status}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="space-y-2">
         <p className="text-sm font-medium">История заявок</p>
@@ -192,5 +240,77 @@ function ProfilePage() {
         <LogOut className="mr-2 size-4" /> Выйти
       </Button>
     </main>
+  );
+}
+const PAYOUT_STATUS: Record<string, string> = {
+  pending: "Ожидает",
+  paid: "Выплачено",
+  rejected: "Отклонено",
+};
+
+/** Kaspi cashout form: credits are converted to tenge and sent to admins in Telegram. */
+function CashoutCard({
+  credits,
+  fullName,
+  phone,
+  onDone,
+}: {
+  credits: number;
+  fullName: string;
+  phone: string;
+  onDone: () => void;
+}) {
+  const submit = useServerFn(requestPayout);
+  const [amount, setAmount] = useState(String(Math.max(MIN_PAYOUT_CREDITS, credits)));
+  const [contact, setContact] = useState(phone);
+  const [busy, setBusy] = useState(false);
+  const value = Number(amount) || 0;
+
+  async function send() {
+    setBusy(true);
+    try {
+      const res = await submit({ data: { credits: value, fullName: fullName || "Без имени", phone: contact } });
+      toast.success(`Заявка отправлена: ${res.amount} ₸`);
+      onDone();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Не удалось отправить заявку");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <Wallet className="size-5 text-primary" strokeWidth={1.6} /> Вывод на Kaspi
+      </p>
+      <p className="text-xs text-muted-foreground">
+        1 кредит = {KZT_PER_CREDIT} ₸. Минимум {MIN_PAYOUT_CREDITS} кредитов.
+      </p>
+      <div className="flex gap-2">
+        <Input
+          inputMode="numeric"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
+          placeholder="Кредиты"
+          className="h-11 rounded-xl"
+          aria-label="Сумма в кредитах"
+        />
+        <Input
+          value={contact}
+          onChange={(e) => setContact(e.target.value)}
+          placeholder="Номер Kaspi"
+          className="h-11 rounded-xl"
+          aria-label="Номер телефона Kaspi"
+        />
+      </div>
+      <Button
+        className="h-12 w-full rounded-xl"
+        disabled={busy || value < MIN_PAYOUT_CREDITS || value > credits || contact.trim().length < 10}
+        onClick={() => void send()}
+      >
+        {busy ? "Отправляем…" : `Вывести ${value * KZT_PER_CREDIT} ₸`}
+      </Button>
+    </div>
   );
 }

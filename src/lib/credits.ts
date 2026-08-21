@@ -21,3 +21,6 @@ export const REPORT_STATUS_LABELS: Record<string, string> = {
   cleaned: "Убрано, ждёт проверки",
   resolved: "Проверено и закрыто",
 };
+
+export const KZT_PER_CREDIT = 10;
+export const MIN_PAYOUT_CREDITS = 50;

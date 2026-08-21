@@ -2,9 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sendTelegram } from "@/lib/telegram.server";
-
-export const KZT_PER_CREDIT = 10;
-export const MIN_PAYOUT_CREDITS = 50;
+import { KZT_PER_CREDIT, MIN_PAYOUT_CREDITS } from "@/lib/credits";
 
 const PayoutInput = z.object({
   credits: z.number().int().min(MIN_PAYOUT_CREDITS).max(100000),
@@ -61,7 +59,7 @@ export const requestPayout = createServerFn({ method: "POST" })
     });
 
     await sendTelegram(
-      `💸 <b>Заявка на выплату Kaspi</b>\n\n👤 ${escapeHtml(data.fullName)}\n📱 <code>${escapeHtml(data.phone)}</code>\n🪙 ${data.credits} кредитов\n💰 <b>${amount} ₸</b>`,
+      `💸 <b>Заявка на выплату Kaspi</b>\n\n👤 ${data.fullName.replace(/[<>&]/g, "")}\n📱 <code>${data.phone.replace(/[<>&]/g, "")}</code>\n🪙 ${data.credits} кредитов\n💰 <b>${amount} ₸</b>`,
       [
         [
           { text: "✅ Выплачено", callback_data: `payout:paid:${request.id}` },
@@ -73,6 +71,3 @@ export const requestPayout = createServerFn({ method: "POST" })
     return { ok: true, amount };
   });
 
-function escapeHtml(v: string) {
-  return v.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c] as string);
-}
