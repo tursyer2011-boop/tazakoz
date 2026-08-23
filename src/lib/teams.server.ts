@@ -53,8 +53,73 @@ function teamCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+function norm(value: string) {
+  return value.trim().toLowerCase().replace(/ё/g, "е");
+}
+
+/** Picks a free destination point (depot) for a worker: closest to coords, else a point in their city, else in their region. */
+export async function resolveWorkerDepot(
+  admin: Admin,
+  opts: { lat?: number | null; lng?: number | null; city?: string | null; regionCode?: string | null; region?: string | null },
+) {
+  if (opts.lat != null && opts.lng != null) {
+    const point = await nearestDepot(admin, opts.lat, opts.lng);
+    if (point) return point.depot;
+  }
+
+  const candidates: any[] = [];
+  if (opts.regionCode) {
+    const { data } = await admin
+      .from("depots")
+      .select("id, code, name, region, region_code, city, lat, lng")
+      .eq("active", true)
+      .eq("region_code", opts.regionCode)
+      .limit(1000);
+    candidates.push(...(data ?? []));
+  }
+  if (!candidates.length && opts.region) {
+    const { data } = await admin
+      .from("depots")
+      .select("id, code, name, region, region_code, city, lat, lng")
+      .eq("active", true)
+      .ilike("region", `%${opts.region}%`)
+      .limit(1000);
+    candidates.push(...(data ?? []));
+  }
+  if (!candidates.length) return null;
+
+  const city = opts.city ? norm(opts.city) : "";
+  const inCity = city ? candidates.filter((d) => norm(d.city ?? "").includes(city) || city.includes(norm(d.city ?? ""))) : [];
+  const pool = inCity.length ? inCity : candidates;
+
+  // Prefer a point whose crews are not full yet.
+  for (const depot of pool) {
+    const { data: teams } = await admin.from("teams").select("id").eq("depot_id", depot.id);
+    if (!teams?.length) return depot;
+    let free = false;
+    for (const team of teams) {
+      const { count } = await admin
+        .from("team_members")
+        .select("id", { count: "exact", head: true })
+        .eq("team_id", team.id);
+      if ((count ?? 0) < TEAM_SIZE) {
+        free = true;
+        break;
+      }
+    }
+    if (free) return depot;
+  }
+  return pool[0];
+}
+
 /** Puts a freshly approved worker into a team: fills incomplete teams first, else opens a new one (that worker becomes captain). */
-export async function assignWorkerToTeam(admin: Admin, userId: string, lat: number | null, lng: number | null) {
+export async function assignWorkerToTeam(
+  admin: Admin,
+  userId: string,
+  lat: number | null,
+  lng: number | null,
+  place?: { city?: string | null; region?: string | null; regionCode?: string | null },
+) {
   const { data: existing } = await admin
     .from("team_members")
     .select("team_id")
@@ -62,9 +127,15 @@ export async function assignWorkerToTeam(admin: Admin, userId: string, lat: numb
     .maybeSingle();
   if (existing) return existing.team_id as string;
 
-  const point = lat != null && lng != null ? await nearestDepot(admin, lat, lng) : null;
-  const depot = point?.depot ?? null;
+  const depot = await resolveWorkerDepot(admin, {
+    lat,
+    lng,
+    city: place?.city ?? null,
+    region: place?.region ?? null,
+    regionCode: place?.regionCode ?? null,
+  });
   if (!depot) throw new Error("Не удалось определить пункт назначения");
+
 
   const { data: teams } = await admin
     .from("teams")
