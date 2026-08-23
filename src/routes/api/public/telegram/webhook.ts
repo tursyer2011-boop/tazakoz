@@ -124,6 +124,24 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           await supabaseAdmin
             .from("user_roles")
             .upsert({ user_id: application.user_id, role: "worker" }, { onConflict: "user_id,role" });
+
+          try {
+            const { assignWorkerToTeam } = await import("@/lib/teams.server");
+            const { data: profile } = await supabaseAdmin
+              .from("profiles")
+              .select("lat, lng")
+              .eq("id", application.user_id)
+              .maybeSingle();
+            await assignWorkerToTeam(
+              supabaseAdmin,
+              application.user_id,
+              profile?.lat ?? null,
+              profile?.lng ?? null,
+              { city: application.city, region: application.region, regionCode: application.region_code },
+            );
+          } catch (assignError) {
+            console.error("[telegram] team assignment failed", assignError);
+          }
         }
 
         await answerCallback(callback.id, status === "approved" ? "Заявка одобрена" : "Заявка отклонена");

@@ -189,7 +189,11 @@ export const reviewApplication = createServerFn({ method: "POST" })
         .eq("id", application.user_id)
         .maybeSingle();
       try {
-        await assignWorkerToTeam(supabaseAdmin, application.user_id, profile?.lat ?? null, profile?.lng ?? null);
+        await assignWorkerToTeam(supabaseAdmin, application.user_id, profile?.lat ?? null, profile?.lng ?? null, {
+          city: application.city,
+          region: application.region,
+          regionCode: application.region_code,
+        });
       } catch (assignError) {
         console.error("[worker] team assignment failed", assignError);
       }

@@ -10,6 +10,7 @@ import { applyAsWorker, completeTask, takeTask } from "@/lib/worker.functions";
 import { awardResidentCredits, getMyTeam, requestTeamCredits } from "@/lib/ops.functions";
 import { resizeImage, signedPhotoUrl, urlToDataUrl } from "@/lib/photos";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
+import { HireResultOverlay } from "@/components/HireResultOverlay";
 import { APPLICATION_STATUS_LABELS, REPORT_STATUS_LABELS } from "@/lib/credits";
 import { SEVERITY, type Severity } from "@/lib/regions";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ function WorkerPage() {
   const application = useQuery({
     queryKey: ["my-worker-application", me?.user.id],
     enabled: Boolean(me?.user.id) && !isWorker,
+    refetchInterval: 15_000,
     queryFn: async () => {
       const { data } = await supabase
         .from("worker_applications")
@@ -88,10 +90,19 @@ function WorkerPage() {
           </p>
         </div>
       ) : (
-        <ApplicationForm
-          rejectedNote={application.data?.status === "rejected" ? application.data.review_note : ""}
-          onDone={() => application.refetch()}
-        />
+        <>
+          {application.data?.status === "rejected" && (
+            <HireResultOverlay
+              storageKey={`hire-no-${application.data.id}`}
+              status="rejected"
+              note={application.data.review_note}
+            />
+          )}
+          <ApplicationForm
+            rejectedNote={application.data?.status === "rejected" ? application.data.review_note : ""}
+            onDone={() => application.refetch()}
+          />
+        </>
       )}
     </main>
   );
@@ -603,6 +614,14 @@ function MyTeamCard() {
 
   return (
     <section className="space-y-3">
+      <HireResultOverlay
+        storageKey={`hire-ok-${t.id}`}
+        status="approved"
+        depotCode={depot?.code}
+        depotName={depot?.name}
+        depotCity={depot?.city}
+        teamCode={t.team_code}
+      />
       <div className="glass-card space-y-2 rounded-3xl p-4">
         <div className="flex items-center justify-between">
           <div>
