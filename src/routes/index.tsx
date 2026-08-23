@@ -97,7 +97,7 @@ const STATS = [
 ];
 
 const FOOTER_LINKS = [
-  { label: "О нас", to: "/about" },
+  { label: "О нас", to: "/#creators" },
   { label: "Карта", to: "/map" },
   { label: "Поддержка", to: "/chat" },
 ];
