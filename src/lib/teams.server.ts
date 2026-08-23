@@ -57,16 +57,11 @@ function norm(value: string) {
   return value.trim().toLowerCase().replace(/ё/g, "е");
 }
 
-/** Picks a free destination point (depot) for a worker: closest to coords, else a point in their city, else in their region. */
+/** Picks a free destination point (depot) for a worker inside their chosen city/region, else the closest point to their coords. */
 export async function resolveWorkerDepot(
   admin: Admin,
   opts: { lat?: number | null; lng?: number | null; city?: string | null; regionCode?: string | null; region?: string | null },
 ) {
-  if (opts.lat != null && opts.lng != null) {
-    const point = await nearestDepot(admin, opts.lat, opts.lng);
-    if (point) return point.depot;
-  }
-
   const candidates: any[] = [];
   if (opts.regionCode) {
     const { data } = await admin
@@ -86,11 +81,21 @@ export async function resolveWorkerDepot(
       .limit(1000);
     candidates.push(...(data ?? []));
   }
-  if (!candidates.length) return null;
+  if (!candidates.length) {
+    if (opts.lat != null && opts.lng != null) {
+      const point = await nearestDepot(admin, opts.lat, opts.lng);
+      if (point) return point.depot;
+    }
+    return null;
+  }
 
   const city = opts.city ? norm(opts.city) : "";
   const inCity = city ? candidates.filter((d) => norm(d.city ?? "").includes(city) || city.includes(norm(d.city ?? ""))) : [];
   const pool = inCity.length ? inCity : candidates;
+  if (opts.lat != null && opts.lng != null) {
+    pool.sort((a, b) => haversineKm(opts.lat!, opts.lng!, a.lat, a.lng) - haversineKm(opts.lat!, opts.lng!, b.lat, b.lng));
+  }
+
 
   // Prefer a point whose crews are not full yet.
   for (const depot of pool) {
