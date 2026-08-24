@@ -3,7 +3,8 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { HardHat, LogOut, MessagesSquare, ShieldCheck, Wallet } from "lucide-react";
+import { HardHat, LogOut, MapPin, MessagesSquare, ShieldCheck, Wallet } from "lucide-react";
+import { getMyTeam } from "@/lib/ops.functions";
 import { KZT_PER_CREDIT, MIN_PAYOUT_CREDITS } from "@/lib/credits";
 import { requestPayout } from "@/lib/payouts.functions";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,24 @@ export const Route = createFileRoute("/_authenticated/profile")({
   }),
   component: ProfilePage,
 });
+
+/** Assigned destination point for approved workers. */
+function MyPointCard() {
+  const load = useServerFn(getMyTeam);
+  const team = useQuery({ queryKey: ["my-team"], queryFn: () => load({}) });
+  const depot = team.data?.depot;
+  if (!team.data?.team || !depot) return null;
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4">
+      <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">ID пункта</p>
+      <p className="text-brand-gradient text-2xl font-semibold tracking-widest">{depot.code}</p>
+      <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+        <MapPin className="size-4" /> {depot.name} · {depot.city}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">Команда №{team.data.team.team_code}</p>
+    </div>
+  );
+}
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -124,6 +143,8 @@ function ProfilePage() {
           <p className="mt-1 text-2xl font-semibold">{profile?.total_credits ?? 0}</p>
         </div>
       </div>
+
+      {hasRole(me?.roles, "worker", "captain") && <MyPointCard />}
 
       <div className="grid gap-2">
         <Link
