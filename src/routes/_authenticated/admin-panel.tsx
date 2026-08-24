@@ -70,6 +70,7 @@ function AdminPage() {
           <TabsTrigger value="users" disabled={!isAdmin}>
             Люди
           </TabsTrigger>
+          <TabsTrigger value="registry">Реестр</TabsTrigger>
           <TabsTrigger value="email" disabled={!isAdmin}>
             Почта
           </TabsTrigger>
@@ -89,9 +90,13 @@ function AdminPage() {
         <TabsContent value="users" className="mt-4">
           {isAdmin ? <UsersAdmin /> : null}
         </TabsContent>
+        <TabsContent value="registry" className="mt-4">
+          <UserRegistry />
+        </TabsContent>
         <TabsContent value="email" className="mt-4">
           {isAdmin ? <EmailDiagnostics /> : null}
         </TabsContent>
+
       </Tabs>
     </main>
   );
