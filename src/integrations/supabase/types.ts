@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_users: {
+        Row: {
+          city: string
+          created_at: string
+          credits: number
+          email: string
+          full_name: string
+          id: string
+          kind: string
+          phone: string
+          region: string
+          region_code: string
+          roles: string[]
+          total_credits: number
+          updated_at: string
+        }
+        Insert: {
+          city?: string
+          created_at?: string
+          credits?: number
+          email?: string
+          full_name?: string
+          id: string
+          kind?: string
+          phone?: string
+          region?: string
+          region_code?: string
+          roles?: string[]
+          total_credits?: number
+          updated_at?: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          credits?: number
+          email?: string
+          full_name?: string
+          id?: string
+          kind?: string
+          phone?: string
+          region?: string
+          region_code?: string
+          roles?: string[]
+          total_credits?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           body: string
@@ -831,6 +879,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      sync_app_user: { Args: { _user_id: string }; Returns: undefined }
     }
     Enums: {
       app_role:
