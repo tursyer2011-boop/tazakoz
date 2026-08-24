@@ -148,3 +148,45 @@ export const adjustCredits = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+const RegistryInput = z.object({
+  kind: z.enum(["all", "resident", "worker"]).default("all"),
+  search: z.string().trim().max(120).default(""),
+});
+
+/** Единый реестр всех зарегистрированных пользователей (жители / работники). */
+export const listAppUsers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => RegistryInput.parse(data ?? {}))
+  .handler(async ({ data, context }) => {
+    const [{ data: isAdmin }, { data: isModerator }] = await Promise.all([
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "moderator" }),
+    ]);
+    if (!isAdmin && !isModerator) throw new Error("Недостаточно прав");
+
+    let query = context.supabase
+      .from("app_users")
+      .select("id, email, full_name, phone, city, region, kind, roles, credits, total_credits, created_at")
+      .order("created_at", { ascending: false })
+      .limit(500);
+
+    if (data.kind !== "all") query = query.eq("kind", data.kind);
+    if (data.search) {
+      const q = `%${data.search}%`;
+      query = query.or(`full_name.ilike.${q},email.ilike.${q},phone.ilike.${q},city.ilike.${q}`);
+    }
+
+    const { data: rows, error } = await query;
+    if (error) throw new Error(error.message);
+
+    const list = rows ?? [];
+    return {
+      users: list,
+      counts: {
+        total: list.length,
+        residents: list.filter((u) => u.kind === "resident").length,
+        workers: list.filter((u) => u.kind === "worker").length,
+      },
+    };
+  });
