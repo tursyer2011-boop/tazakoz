@@ -6,11 +6,11 @@ type Props = {
   /** Unique storage key so the animation plays once per decision. */
   storageKey: string;
   status: "approved" | "rejected";
-  depotCode?: string | null;
-  depotName?: string | null;
-  depotCity?: string | null;
-  teamCode?: string | null;
-  note?: string | null;
+  depotCode?: string | null | undefined;
+  depotName?: string | null | undefined;
+  depotCity?: string | null | undefined;
+  teamCode?: string | null | undefined;
+  note?: string | null | undefined;
 };
 
 /** Full-screen animated result of a worker application decision. */
