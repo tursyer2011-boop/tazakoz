@@ -6,7 +6,7 @@ import { LoaderCircle, ShieldCheck, Users, Trash2, Coins, ClipboardList, MailChe
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole, type AppRole } from "@/hooks/useProfile";
-import { adjustCredits, getAdminOverview, getEmailDiagnostics, setUserRole } from "@/lib/admin.functions";
+import { adjustCredits, getAdminOverview, getEmailDiagnostics, listAppUsers, setUserRole } from "@/lib/admin.functions";
 import { reviewApplication } from "@/lib/worker.functions";
 import { getAdminScope, getTeamActivity, grantTeamCredits } from "@/lib/ops.functions";
 import { OpsMap } from "@/components/OpsMap";
@@ -542,6 +542,91 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
         {icon} {label}
       </p>
       <p className="mt-1 text-xl font-semibold">{value.toLocaleString("ru-RU")}</p>
+    </div>
+  );
+}
+
+function UserRegistry() {
+  const load = useServerFn(listAppUsers);
+  const [kind, setKind] = useState<"all" | "resident" | "worker">("all");
+  const [search, setSearch] = useState("");
+
+  const registry = useQuery({
+    queryKey: ["app-users", kind, search],
+    queryFn: () => load({ data: { kind, search } }),
+    refetchInterval: 30_000,
+  });
+
+  const tabs: Array<{ id: "all" | "resident" | "worker"; label: string }> = [
+    { id: "all", label: "Все" },
+    { id: "resident", label: "Жители" },
+    { id: "worker", label: "Работники" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-1.5">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setKind(t.id)}
+            className={`rounded-full px-3 py-1.5 text-xs ${kind === t.id ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Имя, почта, телефон, город"
+          className="h-10 rounded-xl pl-9"
+        />
+      </div>
+
+      {registry.isLoading ? <LoaderCircle className="mx-auto size-5 animate-spin text-primary" /> : null}
+      {registry.error ? (
+        <p className="glass-card rounded-3xl p-5 text-center text-sm text-muted-foreground">Нет доступа</p>
+      ) : null}
+
+      {registry.data ? (
+        <>
+          <div className="grid grid-cols-3 gap-2">
+            <StatCard icon={<Users className="size-4" />} label="Всего" value={registry.data.counts.total} />
+            <StatCard icon={<Users className="size-4" />} label="Жители" value={registry.data.counts.residents} />
+            <StatCard icon={<ShieldCheck className="size-4" />} label="Работники" value={registry.data.counts.workers} />
+          </div>
+
+          {registry.data.users.map((u) => (
+            <article key={u.id} className="glass-card space-y-1 rounded-3xl p-4 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium">{u.full_name || "Без имени"}</p>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] ${u.kind === "worker" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}
+                >
+                  {u.kind === "worker" ? "Работник" : "Житель"}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">{u.email || "почта не указана"}</p>
+              <p className="text-xs text-muted-foreground">
+                {u.phone || "—"} · {u.region} {u.city}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Кредиты: {u.credits} · всего {u.total_credits} · с{" "}
+                {new Date(u.created_at).toLocaleDateString("ru-RU")}
+              </p>
+              <p className="text-[11px] text-muted-foreground">Роли: {(u.roles ?? []).join(", ")}</p>
+              <p className="font-mono text-[10px] text-muted-foreground">{u.id}</p>
+            </article>
+          ))}
+          {registry.data.users.length === 0 ? (
+            <p className="glass-card rounded-3xl p-5 text-center text-sm text-muted-foreground">Никого не найдено</p>
+          ) : null}
+        </>
+      ) : null}
     </div>
   );
 }
