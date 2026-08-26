@@ -130,8 +130,8 @@ export const adjustCredits = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!profile) throw new Error("Пользователь не найден");
 
-    // Админский множитель: начисляется вдвое больше введённой суммы
-    const applied = data.amount * 2;
+    // Начисление строго 1:1: пользователь получает ровно введённую сумму.
+    const applied = data.amount;
 
     await supabaseAdmin
       .from("profiles")
