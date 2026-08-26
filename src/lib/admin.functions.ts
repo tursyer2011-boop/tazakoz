@@ -130,17 +130,20 @@ export const adjustCredits = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!profile) throw new Error("Пользователь не найден");
 
+    // Админский множитель: начисляется вдвое больше введённой суммы
+    const applied = data.amount * 2;
+
     await supabaseAdmin
       .from("profiles")
       .update({
-        credits: profile.credits + data.amount,
-        total_credits: Math.max(0, profile.total_credits + Math.max(0, data.amount)),
+        credits: profile.credits + applied,
+        total_credits: Math.max(0, profile.total_credits + Math.max(0, applied)),
       })
       .eq("id", data.userId);
 
     await supabaseAdmin.from("credit_transactions").insert({
       user_id: data.userId,
-      amount: data.amount,
+      amount: applied,
       kind: "admin_adjust",
       note: data.note,
       created_by: context.userId,

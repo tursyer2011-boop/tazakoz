@@ -31,15 +31,26 @@ async function logDelivery(entry: {
 }
 
 export function otpEmailHtml(code: string) {
-  return `<!doctype html><html><body style="margin:0;background:#0b0f0d;font-family:Arial,Helvetica,sans-serif;">
-  <div style="max-width:520px;margin:0 auto;padding:32px 24px;color:#e9f7ef;">
-    <h1 style="margin:0 0 8px;font-size:22px;letter-spacing:2px;color:#b8ff5c;">TAZA KÖZ</h1>
-    <p style="margin:0 0 24px;font-size:13px;color:#9fb0a5;">KÖR. HABARLA. QORĞA.</p>
-    <p style="font-size:15px;margin:0 0 12px;">Ваш код подтверждения:</p>
-    <div style="font-size:34px;font-weight:700;letter-spacing:10px;padding:16px 0;color:#b8ff5c;">${code}</div>
-    <p style="font-size:13px;color:#9fb0a5;margin:12px 0 0;">Код действует 10 минут. Никому его не сообщайте.</p>
-    <p style="font-size:12px;color:#6d7d73;margin-top:28px;">Если вы не запрашивали код — просто игнорируйте это письмо.</p>
-  </div></body></html>`;
+  return `<!doctype html><html><body style="margin:0;">
+<div style="background-color: #F4F7FA; padding: 40px 20px; font-family: 'Segoe UI', Arial, sans-serif; color: #1E293B;">
+  <div style="max-width: 500px; margin: 0 auto; background: #FFFFFF; border-radius: 20px; padding: 32px; box-shadow: 8px 8px 20px #E2E8F0, -8px -8px 20px #FFFFFF;">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <h1 style="color: #0066FF; font-size: 26px; margin: 0; font-weight: 800; letter-spacing: -0.5px;">Taza Koz</h1>
+      <p style="color: #64748B; font-size: 13px; margin-top: 4px;">Платформа экологического мониторинга</p>
+    </div>
+    <div style="font-size: 15px; line-height: 1.6; color: #334155;">
+      <p>Здравствуйте!</p>
+      <p>Подтвердите регистрацию в системе <strong>Taza Koz</strong>, введя код ниже:</p>
+    </div>
+    <div style="text-align: center; margin: 32px 0;">
+      <div style="background-color: #0066FF; color: #FFFFFF; padding: 14px 32px; border-radius: 12px; font-weight: 700; font-size: 30px; letter-spacing: 10px; display: inline-block; box-shadow: 0 4px 14px rgba(0, 102, 255, 0.35);">${code}</div>
+      <p style="color: #64748B; font-size: 13px; margin-top: 12px;">Код действует 10 минут. Никому его не сообщайте.</p>
+    </div>
+    <div style="border-top: 1px solid #F1F5F9; padding-top: 20px; margin-top: 32px; text-align: center; font-size: 12px; color: #94A3B8;">
+      © Taza Koz • Казахстан
+    </div>
+  </div>
+</div></body></html>`;
 }
 
 export async function sendOtpEmail(
