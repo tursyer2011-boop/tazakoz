@@ -451,6 +451,7 @@ function UsersAdmin() {
   const changeRole = useServerFn(setUserRole);
   const changeCredits = useServerFn(adjustCredits);
   const [amounts, setAmounts] = useState<Record<string, string>>({});
+  const [pendingCredits, setPendingCredits] = useState<string | null>(null);
 
   const overview = useQuery({ queryKey: ["admin-overview"], queryFn: () => load({ data: undefined }) });
 
