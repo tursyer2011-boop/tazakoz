@@ -41,6 +41,14 @@ export const Route = createFileRoute("/")({
         content: "Народный мониторинг загрязнений воды: ИИ-проверка фото, карта, бригады и Taza Credits.",
       },
       { property: "og:type", content: "website" },
+      {
+        property: "og:image",
+        content: "https://tazakoz.online/__l5e/assets-v1/e117ff63-8c3c-4076-917e-32ca2e49b72c/tazakoz-logo-2026.jpg",
+      },
+      {
+        name: "twitter:image",
+        content: "https://tazakoz.online/__l5e/assets-v1/e117ff63-8c3c-4076-917e-32ca2e49b72c/tazakoz-logo-2026.jpg",
+      },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),

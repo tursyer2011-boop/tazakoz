@@ -451,6 +451,7 @@ function UsersAdmin() {
   const changeRole = useServerFn(setUserRole);
   const changeCredits = useServerFn(adjustCredits);
   const [amounts, setAmounts] = useState<Record<string, string>>({});
+  const [pendingCredits, setPendingCredits] = useState<string | null>(null);
 
   const overview = useQuery({ queryKey: ["admin-overview"], queryFn: () => load({ data: undefined }) });
 
@@ -471,8 +472,10 @@ function UsersAdmin() {
   }
 
   async function applyCredits(userId: string) {
+    if (pendingCredits) return;
     const amount = Number(amounts[userId] ?? 0);
     if (!Number.isFinite(amount) || amount === 0) return;
+    setPendingCredits(userId);
     try {
       await changeCredits({ data: { userId, amount, note: "Ручная корректировка" } });
       setAmounts((a) => ({ ...a, [userId]: "" }));
@@ -480,6 +483,8 @@ function UsersAdmin() {
       toast.success("Кредиты обновлены");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Ошибка");
+    } finally {
+      setPendingCredits(null);
     }
   }
 
@@ -524,8 +529,13 @@ function UsersAdmin() {
                 placeholder="± кредиты"
                 className="h-10 rounded-xl"
               />
-              <Button size="sm" className="rounded-xl" onClick={() => applyCredits(u.id)}>
-                Применить
+              <Button
+                size="sm"
+                className="rounded-xl"
+                disabled={pendingCredits !== null}
+                onClick={() => applyCredits(u.id)}
+              >
+                {pendingCredits === u.id ? "..." : "Применить"}
               </Button>
             </div>
           </article>
