@@ -99,11 +99,7 @@ function AuthScreen() {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
-        const status = await checkStatus({});
-        if (status.verified) {
-          navigate({ to: "/map", replace: true });
-          return;
-        }
+        // Код подтверждения обязателен при каждом входе.
         await startVerification("login");
         return;
       }
