@@ -36,6 +36,12 @@ export const requestEmailOtp = createServerFn({ method: "POST" })
     const code = randomOtp();
     const expiresAt = new Date(Date.now() + TTL_MINUTES * 60_000).toISOString();
 
+    // Каждая новая сессия должна подтверждаться кодом: сбрасываем прошлое подтверждение.
+    await supabaseAdmin
+      .from("profiles")
+      .update({ email_verified_at: null })
+      .eq("id", context.userId);
+
     await supabaseAdmin
       .from("email_otps")
       .update({ consumed_at: new Date().toISOString() })
