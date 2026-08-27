@@ -472,8 +472,10 @@ function UsersAdmin() {
   }
 
   async function applyCredits(userId: string) {
+    if (pendingCredits) return;
     const amount = Number(amounts[userId] ?? 0);
     if (!Number.isFinite(amount) || amount === 0) return;
+    setPendingCredits(userId);
     try {
       await changeCredits({ data: { userId, amount, note: "Ручная корректировка" } });
       setAmounts((a) => ({ ...a, [userId]: "" }));
@@ -481,6 +483,8 @@ function UsersAdmin() {
       toast.success("Кредиты обновлены");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Ошибка");
+    } finally {
+      setPendingCredits(null);
     }
   }
 
