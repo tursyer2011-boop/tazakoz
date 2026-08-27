@@ -302,7 +302,12 @@ function AuthScreen() {
               <div className="flex items-center justify-between text-sm">
                 <button
                   type="button"
-                  onClick={() => setStep("form")}
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    setPassword("");
+                    setCode(EMPTY_CODE);
+                    setStep("form");
+                  }}
                   className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
                 >
                   <ArrowLeft className="size-4" /> Назад
