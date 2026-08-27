@@ -529,8 +529,13 @@ function UsersAdmin() {
                 placeholder="± кредиты"
                 className="h-10 rounded-xl"
               />
-              <Button size="sm" className="rounded-xl" onClick={() => applyCredits(u.id)}>
-                Применить
+              <Button
+                size="sm"
+                className="rounded-xl"
+                disabled={pendingCredits !== null}
+                onClick={() => applyCredits(u.id)}
+              >
+                {pendingCredits === u.id ? "..." : "Применить"}
               </Button>
             </div>
           </article>
