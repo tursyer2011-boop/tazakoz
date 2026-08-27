@@ -69,9 +69,15 @@ function AuthScreen() {
       try {
         const status = await checkStatus({});
         if (cancelled) return;
-        if (status.verified) navigate({ to: "/map", replace: true });
+        if (status.verified) {
+          navigate({ to: "/map", replace: true });
+          return;
+        }
+        // Сессия есть, но почта не подтверждена — требуем код.
+        setEmail(session.user.email ?? "");
+        setStep("verify");
       } catch {
-        navigate({ to: "/map", replace: true });
+        // Не удалось проверить статус — остаёмся на экране входа.
       }
     })();
     return () => {
