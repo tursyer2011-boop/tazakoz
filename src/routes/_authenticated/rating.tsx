@@ -52,11 +52,11 @@ function RatingPage() {
       )}
 
       <ul className="space-y-2">
-        {rows.map((r, i) => (
+        {rows.map((r, i) => (r.id === user?.id ? null : (
           <li key={r.id}>
             <RowCard row={r} place={i + 1} />
           </li>
-        ))}
+        )))}
       </ul>
     </main>
   );
