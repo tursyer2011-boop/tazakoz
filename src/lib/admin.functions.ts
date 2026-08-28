@@ -123,6 +123,19 @@ export const adjustCredits = createServerFn({ method: "POST" })
     if (!isAdmin) throw new Error("Недостаточно прав");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Защита от двойного клика: одинаковое начисление в течение 15 секунд игнорируется.
+    const since = new Date(Date.now() - 15_000).toISOString();
+    const { data: dup } = await supabaseAdmin
+      .from("credit_transactions")
+      .select("id")
+      .eq("user_id", data.userId)
+      .eq("kind", "admin_adjust")
+      .eq("amount", data.amount)
+      .gte("created_at", since)
+      .limit(1);
+    if (dup && dup.length > 0) return { ok: true, duplicate: true };
+
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("credits, total_credits")
