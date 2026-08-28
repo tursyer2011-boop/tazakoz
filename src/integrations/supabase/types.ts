@@ -880,6 +880,7 @@ export type Database = {
         Returns: boolean
       }
       sync_app_user: { Args: { _user_id: string }; Returns: undefined }
+      username_available: { Args: { _username: string }; Returns: boolean }
     }
     Enums: {
       app_role:
