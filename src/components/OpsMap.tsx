@@ -11,11 +11,15 @@ export function OpsMap({
   teams,
   calls,
   center,
+  zoom = 7,
+  heightClass = "h-[70vh]",
 }: {
   depots: MapDepot[];
   teams: MapTeam[];
   calls: MapCall[];
   center: { lat: number; lng: number };
+  zoom?: number;
+  heightClass?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
