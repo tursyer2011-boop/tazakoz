@@ -32,7 +32,7 @@ export function OpsMap({
       const L = await import("leaflet");
       await import("leaflet/dist/leaflet.css");
       if (cancelled || !containerRef.current || mapRef.current) return;
-      const map = L.map(containerRef.current, { zoomControl: false }).setView([center.lat, center.lng], 7);
+      const map = L.map(containerRef.current, { zoomControl: false }).setView([center.lat, center.lng], zoom);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap",
         maxZoom: 18,
@@ -95,7 +95,7 @@ export function OpsMap({
     };
   }, [depots, teams, calls, ready]);
 
-  return <div ref={containerRef} className="h-[70vh] w-full overflow-hidden rounded-3xl border border-border" />;
+  return <div ref={containerRef} className={`${heightClass} w-full overflow-hidden rounded-3xl border border-border`} />;
 }
 
 function escapeHtml(value: string) {
