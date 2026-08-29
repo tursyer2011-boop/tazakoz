@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
+import { UsernameField, type UsernameState } from "@/components/UsernameField";
+import { fallbackUsername } from "@/lib/username";
 import { WheelDatePicker } from "@/components/WheelDatePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
@@ -52,6 +54,7 @@ function AuthScreen() {
   const [lastName, setLastName] = useState("");
   const [patronymic, setPatronymic] = useState("");
   const [username, setUsername] = useState("");
+  const [usernameState, setUsernameState] = useState<UsernameState>("empty");
   const [birthDate, setBirthDate] = useState("");
   const [phone, setPhone] = useState("");
   const [place, setPlace] = useState<PickedLocation | null>(null);
@@ -134,6 +137,14 @@ function AuthScreen() {
         toast.error("Пароль должен быть не короче 8 символов");
         return;
       }
+      if (usernameState === "taken") {
+        toast.error("Этот никнейм уже занят. Пожалуйста, выберите другой.");
+        return;
+      }
+      if (usernameState === "invalid") {
+        toast.error("Никнейм: 3–24 символа, латиница, цифры, «_» и «.»");
+        return;
+      }
       if (!agree) {
         toast.error("Подтвердите согласие с условиями и обработкой данных");
         return;
@@ -148,7 +159,7 @@ function AuthScreen() {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
             patronymic: patronymic.trim(),
-            username: username.trim(),
+            username: username.trim() || fallbackUsername(),
             phone: phone.trim(),
             birth_date: birthDate,
             city: place.settlement.name,
@@ -345,10 +356,7 @@ function AuthScreen() {
                     <Label>Дата рождения</Label>
                     <WheelDatePicker value={birthDate} onChange={setBirthDate} />
                   </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="username">Никнейм</Label>
-                    <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="taza_user" className="h-11 rounded-xl" maxLength={30} />
-                  </div>
+                  <UsernameField value={username} onChange={setUsername} onStateChange={setUsernameState} />
                   <div className="grid gap-1.5">
                     <Label htmlFor="phone">Телефон</Label>
                     <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 700 000 00 00" className="h-11 rounded-xl" maxLength={20} />

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Clock, Coins, HardHat, IdCard, LoaderCircle, MapPin, Send, Upload, Users, X } from "lucide-react";
@@ -7,7 +7,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole } from "@/hooks/useProfile";
 import { applyAsWorker, completeTask, takeTask } from "@/lib/worker.functions";
-import { awardResidentCredits, getMyTeam, requestTeamCredits } from "@/lib/ops.functions";
+import { awardResidentCredits, getMyTeam, getWorkerBoard, requestTeamCredits } from "@/lib/ops.functions";
+import { CreditTransferDialog } from "@/components/CreditTransferDialog";
+import { OpsMap } from "@/components/OpsMap";
+import { workerCode } from "@/lib/username";
 import { resizeImage, signedPhotoUrl, urlToDataUrl } from "@/lib/photos";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 import { HireResultOverlay } from "@/components/HireResultOverlay";
