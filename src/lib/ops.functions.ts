@@ -321,3 +321,70 @@ export const getMyTeam = createServerFn({ method: "POST" })
       pendingRequest: Boolean(pending),
     };
   });
+
+/**
+ * Рабочий стол работника: его ID, пункт назначения, карта зоны и ближайшие вызовы.
+ * Вызовы сортируются по расстоянию от рабочей точки (GPS жалобы vs GPS работника).
+ */
+export const getWorkerBoard = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { haversineKm } = await import("@/lib/teams.server");
+
+    const [{ data: member }, { data: profile }] = await Promise.all([
+      supabaseAdmin.from("team_members").select("team_id, is_captain").eq("user_id", context.userId).maybeSingle(),
+      supabaseAdmin.from("profiles").select("full_name, username, city, region, lat, lng").eq("id", context.userId).maybeSingle(),
+    ]);
+
+    let depot: any = null;
+    let team: any = null;
+    if (member) {
+      const { data: t } = await supabaseAdmin.from("teams").select("*").eq("id", member.team_id).maybeSingle();
+      team = t;
+      if (t?.depot_id) {
+        const { data: d } = await supabaseAdmin.from("depots").select("*").eq("id", t.depot_id).maybeSingle();
+        depot = d;
+      }
+    }
+
+    const originLat = depot?.lat ?? profile?.lat ?? null;
+    const originLng = depot?.lng ?? profile?.lng ?? null;
+
+    const { data: reports } = await supabaseAdmin
+      .from("reports")
+      .select("id, user_id, address, water_body, region, severity, status, lat, lng, comment, photo_url, worker_reward, assigned_worker_id, depot_id, created_at")
+      .eq("approved", true)
+      .neq("status", "resolved")
+      .order("created_at", { ascending: false })
+      .limit(300);
+
+    const list = (reports ?? []).map((r) => ({
+      ...r,
+      distanceKm:
+        originLat != null && originLng != null && r.lat != null && r.lng != null
+          ? haversineKm(originLat, originLng, r.lat, r.lng)
+          : null,
+      mine: r.assigned_worker_id === context.userId,
+      atMyDepot: depot ? r.depot_id === depot.id : false,
+    }));
+
+    // Ближайшие: свои задания, вызовы моего пункта и всё в радиусе 80 км.
+    const calls = list
+      .filter((r) => r.mine || r.atMyDepot || (r.distanceKm != null && r.distanceKm <= 80) || originLat == null)
+      .sort((a, b) => {
+        if (a.mine !== b.mine) return a.mine ? -1 : 1;
+        return (a.distanceKm ?? 9e9) - (b.distanceKm ?? 9e9);
+      })
+      .slice(0, 40);
+
+    return {
+      workerUserId: context.userId,
+      profile,
+      team,
+      depot,
+      isCaptain: Boolean(member?.is_captain),
+      origin: originLat != null && originLng != null ? { lat: originLat, lng: originLng } : null,
+      calls,
+    };
+  });

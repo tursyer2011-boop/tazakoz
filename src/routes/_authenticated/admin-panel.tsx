@@ -10,6 +10,7 @@ import { adjustCredits, getAdminOverview, getEmailDiagnostics, listAppUsers, set
 import { reviewApplication } from "@/lib/worker.functions";
 import { getAdminScope, getTeamActivity, grantTeamCredits } from "@/lib/ops.functions";
 import { OpsMap } from "@/components/OpsMap";
+import { CreditTransferDialog } from "@/components/CreditTransferDialog";
 import { APPLICATION_STATUS_LABELS } from "@/lib/credits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -439,6 +440,11 @@ function ReportsAdmin() {
             {r.severity} · {r.status} · {r.approved ? "подтверждена" : "отклонена ИИ"}
           </p>
           <p className="text-muted-foreground">{r.ai_reason}</p>
+          <CreditTransferDialog
+            reportId={r.id}
+            defaultUserId={r.assigned_worker_id ?? r.user_id}
+            defaultLabel={r.assigned_worker_id ? "работник, убравший точку" : "автор жалобы"}
+          />
         </article>
       ))}
     </div>

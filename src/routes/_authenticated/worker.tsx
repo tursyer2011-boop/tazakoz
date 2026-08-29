@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Clock, Coins, HardHat, IdCard, LoaderCircle, MapPin, Send, Upload, Users, X } from "lucide-react";
@@ -7,7 +7,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole } from "@/hooks/useProfile";
 import { applyAsWorker, completeTask, takeTask } from "@/lib/worker.functions";
-import { awardResidentCredits, getMyTeam, requestTeamCredits } from "@/lib/ops.functions";
+import { awardResidentCredits, getMyTeam, getWorkerBoard, requestTeamCredits } from "@/lib/ops.functions";
+import { CreditTransferDialog } from "@/components/CreditTransferDialog";
+import { OpsMap } from "@/components/OpsMap";
+import { workerCode } from "@/lib/username";
 import { resizeImage, signedPhotoUrl, urlToDataUrl } from "@/lib/photos";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 import { HireResultOverlay } from "@/components/HireResultOverlay";
@@ -449,33 +452,45 @@ function DocUpload({
 
 function WorkerTasks({ userId }: { userId: string }) {
   const queryClient = useQueryClient();
+  const loadBoard = useServerFn(getWorkerBoard);
   const take = useServerFn(takeTask);
   const complete = useServerFn(completeTask);
   const fileRef = useRef<HTMLInputElement>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const seenIds = useRef<Set<string> | null>(null);
 
-  const tasks = useQuery({
-    queryKey: ["worker-tasks", userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("reports")
-        .select("*")
-        .eq("approved", true)
-        .neq("status", "resolved")
-        .order("created_at", { ascending: false })
-        .limit(60);
-      if (error) throw error;
-      return data;
-    },
+  const board = useQuery({
+    queryKey: ["worker-board", userId],
+    queryFn: () => loadBoard({}),
+    refetchInterval: 20_000,
   });
+
+  // Оповещение о новых ближайших вызовах.
+  useEffect(() => {
+    const calls = board.data?.calls;
+    if (!calls) return;
+    if (seenIds.current === null) {
+      seenIds.current = new Set(calls.map((c) => c.id));
+      return;
+    }
+    const fresh = calls.filter((c) => !seenIds.current!.has(c.id) && !c.assigned_worker_id);
+    for (const c of fresh) {
+      toast.info(
+        `Новый вызов рядом: ${c.address || c.water_body || "без адреса"}${
+          c.distanceKm != null ? ` · ${c.distanceKm.toFixed(1)} км` : ""
+        }`,
+      );
+    }
+    seenIds.current = new Set(calls.map((c) => c.id));
+  }, [board.data]);
 
   async function onTake(reportId: string) {
     setBusyId(reportId);
     try {
       await take({ data: { reportId } });
       toast.success("Задание закреплено за вами");
-      await queryClient.invalidateQueries({ queryKey: ["worker-tasks"] });
+      await queryClient.invalidateQueries({ queryKey: ["worker-board"] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Не удалось взять задание");
     } finally {
@@ -488,7 +503,7 @@ function WorkerTasks({ userId }: { userId: string }) {
     const reportId = activeId;
     e.target.value = "";
     if (!file || !reportId) return;
-    const report = tasks.data?.find((t) => t.id === reportId);
+    const report = board.data?.calls.find((t) => t.id === reportId);
     if (!report) return;
 
     setBusyId(reportId);
@@ -522,19 +537,68 @@ function WorkerTasks({ userId }: { userId: string }) {
     }
   }
 
-  if (tasks.isLoading) return <LoaderCircle className="mx-auto size-5 animate-spin text-primary" />;
-  const items = tasks.data ?? [];
+  if (board.isLoading) return <LoaderCircle className="mx-auto size-5 animate-spin text-primary" />;
+  const data = board.data;
+  if (!data) return null;
+  const items = data.calls;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onAfterPhoto} />
+
+      {/* Карточка работника: ID, зона работы и карта */}
+      <section className="glass-card space-y-3 rounded-3xl p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">ID работника</p>
+            <p className="text-2xl font-semibold tracking-widest text-brand-gradient">{workerCode(userId)}</p>
+            <p className="text-xs text-muted-foreground">
+              {data.profile?.username ? `@${data.profile.username}` : data.profile?.full_name || ""}
+            </p>
+          </div>
+          <span className="rounded-full bg-secondary px-3 py-1 text-xs">
+            {data.isCaptain ? "Капитан" : "Работник"}
+          </span>
+        </div>
+        <p className="flex items-center gap-1 text-sm text-muted-foreground">
+          <MapPin className="size-4" /> Зона работы:{" "}
+          {data.depot ? `${data.depot.name} · ${data.depot.city} (${data.depot.code})` : data.profile?.city || "не назначена"}
+        </p>
+        {data.origin && (
+          <OpsMap
+            heightClass="h-64"
+            zoom={10}
+            center={data.origin}
+            depots={
+              data.depot
+                ? [
+                    {
+                      id: data.depot.id,
+                      code: data.depot.code,
+                      name: data.depot.name,
+                      city: data.depot.city,
+                      lat: data.depot.lat,
+                      lng: data.depot.lng,
+                    },
+                  ]
+                : []
+            }
+            teams={[{ team_id: "me", lat: data.origin.lat, lng: data.origin.lng, status: "вы", code: workerCode(userId) }]}
+            calls={items
+              .filter((c) => c.lat != null && c.lng != null)
+              .map((c) => ({ id: c.id, lat: c.lat, lng: c.lng, severity: c.severity, address: c.address || "" }))}
+          />
+        )}
+      </section>
+
+      <p className="text-sm font-medium">Ближайшие вызовы ({items.length})</p>
       {items.length === 0 && (
         <p className="glass-card rounded-3xl p-5 text-center text-sm text-muted-foreground">
-          Свободных заданий пока нет
+          Свободных заданий рядом пока нет
         </p>
       )}
       {items.map((task) => {
-        const mine = task.assigned_worker_id === userId;
+        const mine = task.mine;
         const free = !task.assigned_worker_id;
         const severity = SEVERITY[(task.severity as Severity) ?? "low"];
         return (
@@ -544,6 +608,7 @@ function WorkerTasks({ userId }: { userId: string }) {
                 <p className="text-sm font-medium">{task.address || task.region || "Без адреса"}</p>
                 <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                   <MapPin className="size-3" /> {task.lat.toFixed(4)}, {task.lng.toFixed(4)}
+                  {task.distanceKm != null && ` · ${task.distanceKm.toFixed(1)} км от вас`}
                 </p>
               </div>
               <span className="rounded-full px-2 py-1 text-xs" style={{ color: severity.color, background: "oklch(1 0 0 / 6%)" }}>
@@ -577,6 +642,15 @@ function WorkerTasks({ userId }: { userId: string }) {
                   </span>
                 )}
               </Button>
+            )}
+            {data.isCaptain && (
+              <CreditTransferDialog
+                reportId={task.id}
+                defaultUserId={task.user_id}
+                defaultLabel="автор жалобы"
+                maxAmount={15}
+                triggerLabel="Перевести кредиты жителю"
+              />
             )}
             {!free && !mine && (
               <p className="flex items-center gap-1 text-xs text-muted-foreground">
