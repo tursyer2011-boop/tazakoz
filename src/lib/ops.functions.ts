@@ -378,6 +378,38 @@ export const getWorkerBoard = createServerFn({ method: "POST" })
       })
       .slice(0, 40);
 
+    // Данные отправителя жалобы и приватный чат по каждому вызову.
+    const reporterIds = Array.from(new Set(calls.map((c) => c.user_id).filter(Boolean)));
+    const callIds = calls.map((c) => c.id);
+    const [{ data: reporters }, { data: threads }] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("id, full_name, username, phone, city")
+        .in("id", reporterIds.length ? reporterIds : ["00000000-0000-0000-0000-000000000000"]),
+      supabaseAdmin
+        .from("chat_threads")
+        .select("id, report_id, worker_id")
+        .in("report_id", callIds.length ? callIds : ["00000000-0000-0000-0000-000000000000"]),
+    ]);
+
+    const enriched = calls.map((c) => {
+      const reporter = (reporters ?? []).find((p) => p.id === c.user_id) ?? null;
+      const thread = (threads ?? []).find((t) => t.report_id === c.id) ?? null;
+      return {
+        ...c,
+        reporter: reporter
+          ? {
+              id: reporter.id,
+              name: reporter.full_name || "Житель",
+              username: reporter.username,
+              // Телефон виден только назначенному работнику.
+              phone: c.mine ? reporter.phone : "",
+            }
+          : null,
+        threadId: thread && thread.worker_id === context.userId ? thread.id : null,
+      };
+    });
+
     return {
       workerUserId: context.userId,
       profile,
@@ -385,6 +417,7 @@ export const getWorkerBoard = createServerFn({ method: "POST" })
       depot,
       isCaptain: Boolean(member?.is_captain),
       origin: originLat != null && originLng != null ? { lat: originLat, lng: originLng } : null,
-      calls,
+      calls: enriched,
     };
+
   });
