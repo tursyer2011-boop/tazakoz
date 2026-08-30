@@ -228,8 +228,46 @@ export const takeTask = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
     if (!updated) throw new Error("Задание уже взято другим работником");
-    return { ok: true };
+
+    // Приватная переписка работника с автором жалобы (видна только им двоим).
+    let threadId: string | null = null;
+    const { data: existing } = await supabaseAdmin
+      .from("chat_threads")
+      .select("id")
+      .eq("report_id", updated.id)
+      .maybeSingle();
+    if (existing) {
+      await supabaseAdmin
+        .from("chat_threads")
+        .update({ worker_id: context.userId, status: "open" })
+        .eq("id", existing.id);
+      threadId = existing.id;
+    } else {
+      const { data: thread } = await supabaseAdmin
+        .from("chat_threads")
+        .insert({
+          report_id: updated.id,
+          created_by: updated.user_id,
+          worker_id: context.userId,
+          subject: `Уборка · ${updated.address || updated.water_body || "жалоба"}`,
+          status: "open",
+        })
+        .select("id")
+        .single();
+      threadId = thread?.id ?? null;
+    }
+
+    if (threadId) {
+      await supabaseAdmin.from("chat_messages").insert({
+        thread_id: threadId,
+        sender_id: context.userId,
+        body: "Здравствуйте! Я работник TAZA KÖZ, взял вашу жалобу в работу. После уборки пришлю фото сюда.",
+      });
+    }
+
+    return { ok: true, threadId };
   });
+
 
 export const completeTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
