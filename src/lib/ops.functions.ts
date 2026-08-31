@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { hasRole } from "@/lib/roles";
 
 const SendCreditsInput = z.object({
   reportId: z.string().uuid(),
@@ -16,10 +17,7 @@ const TeamLookupInput = z.object({ teamCode: z.string().trim().min(1).max(12) })
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 async function assertAdmin(context: { supabase: any; userId: string }) {
-  const { data: isAdmin } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "admin",
-  });
+  const isAdmin = await hasRole(context.supabase, context.userId, "admin");
   if (!isAdmin) throw new Error("Недостаточно прав");
   const { data: profile } = await context.supabase
     .from("profiles")
