@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_invites: {
+        Row: {
+          city: string
+          created_at: string
+          created_by: string | null
+          email: string
+          expires_at: string
+          id: string
+          region: string
+          region_code: string
+          used_at: string | null
+        }
+        Insert: {
+          city?: string
+          created_at?: string
+          created_by?: string | null
+          email: string
+          expires_at?: string
+          id?: string
+          region?: string
+          region_code?: string
+          used_at?: string | null
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          region?: string
+          region_code?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       app_users: {
         Row: {
           city: string

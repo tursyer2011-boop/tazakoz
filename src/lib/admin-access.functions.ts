@@ -20,9 +20,41 @@ const ActivateInput = z.object({
 
 const TTL_MINUTES = 10;
 
+/** Пароль доступа берётся только из секрета. Нет секрета — вход закрыт. */
 function checkPassword(password: string) {
-  const expected = process.env["TELEGRAM_BOT_ACCESS_PASSWORD"] ?? "TazaKoz.online.job";
-  if (password.trim() !== expected) throw new Error("Неверный пароль доступа");
+  const expected = process.env["TELEGRAM_BOT_ACCESS_PASSWORD"];
+  if (!expected || expected.trim().length < 12) {
+    throw new Error("Доступ администратора не настроен. Обратитесь к владельцу платформы.");
+  }
+  if (password.trim() !== expected.trim()) throw new Error("Неверный пароль доступа");
+}
+
+/**
+ * Пароля недостаточно: e-mail должен быть заранее приглашён действующим админом.
+ * Исключение — первичная настройка, когда админов в системе ещё нет.
+ */
+async function requireInvite(supabaseAdmin: any, email: string) {
+  const { count } = await supabaseAdmin
+    .from("user_roles")
+    .select("id", { count: "exact", head: true })
+    .eq("role", "admin");
+
+  if ((count ?? 0) === 0) return null; // bootstrap первого администратора
+
+  const { data: invite } = await supabaseAdmin
+    .from("admin_invites")
+    .select("*")
+    .ilike("email", email)
+    .is("used_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!invite) throw new Error("Этот e-mail не приглашён администратором платформы");
+  if (new Date(invite.expires_at).getTime() < Date.now()) {
+    throw new Error("Срок действия приглашения истёк. Попросите админа выслать новое.");
+  }
+  return invite;
 }
 
 export const requestAdminAccess = createServerFn({ method: "POST" })
@@ -34,6 +66,8 @@ export const requestAdminAccess = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { hashOtp, randomOtp } = await import("@/lib/otp.server");
     const { sendOtpEmail } = await import("@/lib/email.server");
+
+    await requireInvite(supabaseAdmin, email);
 
     const { data: last } = await supabaseAdmin
       .from("email_otps")
@@ -76,6 +110,8 @@ export const activateAdminAccess = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { hashOtp } = await import("@/lib/otp.server");
+
+    const invite = await requireInvite(supabaseAdmin, email);
 
     const { data: record } = await supabaseAdmin
       .from("email_otps")
@@ -128,6 +164,13 @@ export const activateAdminAccess = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id,role" });
+
+    if (invite) {
+      await supabaseAdmin
+        .from("admin_invites")
+        .update({ used_at: new Date().toISOString() })
+        .eq("id", invite.id);
+    }
 
     const { data: link, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
