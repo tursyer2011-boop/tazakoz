@@ -20,15 +20,52 @@ const ActivateInput = z.object({
 
 const TTL_MINUTES = 10;
 
+/** Пароль доступа берётся только из секрета. Нет секрета — вход закрыт. */
 function checkPassword(password: string) {
-  const expected = process.env["TELEGRAM_BOT_ACCESS_PASSWORD"] ?? "TazaKoz.online.job";
-  if (password.trim() !== expected) throw new Error("Неверный пароль доступа");
+  const expected = process.env["TELEGRAM_BOT_ACCESS_PASSWORD"];
+  if (!expected || expected.trim().length < 12) {
+    throw new Error("Доступ администратора не настроен. Обратитесь к владельцу платформы.");
+  }
+  const provided = password.trim();
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected.trim());
+  if (a.length !== b.length) throw new Error("Неверный пароль доступа");
+  const { timingSafeEqual } = await import("node:crypto").catch(() => ({ timingSafeEqual: null as never }));
+  if (timingSafeEqual && !timingSafeEqual(a, b)) throw new Error("Неверный пароль доступа");
+}
+
+/**
+ * Пароля недостаточно: e-mail должен быть заранее приглашён действующим админом.
+ * Исключение — первичная настройка, когда админов в системе ещё нет.
+ */
+async function requireInvite(supabaseAdmin: any, email: string) {
+  const { count } = await supabaseAdmin
+    .from("user_roles")
+    .select("id", { count: "exact", head: true })
+    .eq("role", "admin");
+
+  if ((count ?? 0) === 0) return null; // bootstrap первого администратора
+
+  const { data: invite } = await supabaseAdmin
+    .from("admin_invites")
+    .select("*")
+    .ilike("email", email)
+    .is("used_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!invite) throw new Error("Этот e-mail не приглашён администратором платформы");
+  if (new Date(invite.expires_at).getTime() < Date.now()) {
+    throw new Error("Срок действия приглашения истёк. Попросите админа выслать новое.");
+  }
+  return invite;
 }
 
 export const requestAdminAccess = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => RequestInput.parse(data))
   .handler(async ({ data }) => {
-    checkPassword(data.password);
+    await checkPassword(data.password);
     const email = data.email.trim().toLowerCase();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
