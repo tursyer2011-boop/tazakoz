@@ -98,10 +98,8 @@ function ChatPage() {
   return <ThreadView key={active.id} thread={active} onBack={() => navigate({ search: {} })} meId={me?.user.id} />;
 }
 
-type Thread = NonNullable<ReturnType<typeof useThreadType>>;
-function useThreadType() {
-  return null as unknown as Awaited<ReturnType<typeof getMyThreads>>[number] | null;
-}
+type Thread = Awaited<ReturnType<typeof getMyThreads>>[number];
+
 
 function ThreadView({
   thread,
