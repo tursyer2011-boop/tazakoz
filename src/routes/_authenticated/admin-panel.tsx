@@ -698,11 +698,8 @@ function AdminInvites() {
           Стать админом можно только по приглашению на конкретный e-mail. Пароля доступа недостаточно.
         </p>
         <Input placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
-        <div className="grid grid-cols-2 gap-2">
-          <Input placeholder="Область" value={region} onChange={(e) => setRegion(e.target.value)} />
-          <Input placeholder="Город" value={city} onChange={(e) => setCity(e.target.value)} />
-        </div>
-        <Button onClick={submit} disabled={busy || !email.trim()} className="w-full">
+        <LocationPicker value={location} onChange={setLocation} />
+        <Button onClick={submit} disabled={busy || !email.trim() || !location} className="w-full">
           {busy ? <LoaderCircle className="size-4 animate-spin" /> : "Создать приглашение"}
         </Button>
       </div>
