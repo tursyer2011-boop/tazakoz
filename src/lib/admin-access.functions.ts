@@ -60,12 +60,14 @@ async function requireInvite(supabaseAdmin: any, email: string) {
 export const requestAdminAccess = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => RequestInput.parse(data))
   .handler(async ({ data }) => {
-    await checkPassword(data.password);
+    checkPassword(data.password);
     const email = data.email.trim().toLowerCase();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { hashOtp, randomOtp } = await import("@/lib/otp.server");
     const { sendOtpEmail } = await import("@/lib/email.server");
+
+    await requireInvite(supabaseAdmin, email);
 
     const { data: last } = await supabaseAdmin
       .from("email_otps")
@@ -108,6 +110,8 @@ export const activateAdminAccess = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { hashOtp } = await import("@/lib/otp.server");
+
+    const invite = await requireInvite(supabaseAdmin, email);
 
     const { data: record } = await supabaseAdmin
       .from("email_otps")
@@ -160,6 +164,13 @@ export const activateAdminAccess = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id,role" });
+
+    if (invite) {
+      await supabaseAdmin
+        .from("admin_invites")
+        .update({ used_at: new Date().toISOString() })
+        .eq("id", invite.id);
+    }
 
     const { data: link, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
