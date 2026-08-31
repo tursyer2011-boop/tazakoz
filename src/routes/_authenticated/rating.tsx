@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Trophy } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { getLeaderboard } from "@/lib/public.functions";
 import { useSession } from "@/hooks/useSession";
 
 export const Route = createFileRoute("/_authenticated/rating")({
@@ -26,12 +27,11 @@ type Row = {
 
 function RatingPage() {
   const { user } = useSession();
+  const fetchLeaderboard = useServerFn(getLeaderboard);
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["rating"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_leaderboard", { _limit: 100 });
-      if (error) throw error;
-      return (data ?? []) as Row[];
+      return (await fetchLeaderboard({ data: { limit: 100 } })) as Row[];
     },
   });
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, LoaderCircle, XCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { checkUsernameAvailable } from "@/lib/public.functions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isValidUsername, sanitizeUsername } from "@/lib/username";
@@ -18,6 +19,7 @@ export function UsernameField({
   onStateChange?: (state: UsernameState) => void;
 }) {
   const [state, setState] = useState<UsernameState>("empty");
+  const checkUsername = useServerFn(checkUsernameAvailable);
 
   useEffect(() => {
     const clean = value.trim();
@@ -32,10 +34,13 @@ export function UsernameField({
     setState("checking");
     let cancelled = false;
     const timer = setTimeout(async () => {
-      const { data, error } = await supabase.rpc("username_available", { _username: clean });
-      if (cancelled) return;
-      if (error) setState("free");
-      else setState(data ? "free" : "taken");
+      try {
+        const result = await checkUsername({ data: { username: clean } });
+        if (cancelled) return;
+        setState(result.available ? "free" : "taken");
+      } catch {
+        if (!cancelled) setState("free");
+      }
     }, 400);
     return () => {
       cancelled = true;
