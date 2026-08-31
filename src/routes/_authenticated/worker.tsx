@@ -591,13 +591,15 @@ function WorkerTasks({ userId }: { userId: string }) {
         )}
       </section>
 
-      <p className="text-sm font-medium">Ближайшие вызовы ({items.length})</p>
-      {items.length === 0 && (
+      <NotifyPermissionCard text="Разрешите уведомления, чтобы получать сигнал о новой жалобе рядом, даже если вкладка свёрнута." />
+
+      <p className="text-sm font-medium">Входящие жалобы рядом ({visible.length})</p>
+      {visible.length === 0 && (
         <p className="glass-card rounded-3xl p-5 text-center text-sm text-muted-foreground">
-          Свободных заданий рядом пока нет
+          Свободных жалоб рядом пока нет
         </p>
       )}
-      {items.map((task) => {
+      {visible.map((task) => {
         const mine = task.mine;
         const free = !task.assigned_worker_id;
         const severity = SEVERITY[(task.severity as Severity) ?? "low"];
@@ -615,33 +617,77 @@ function WorkerTasks({ userId }: { userId: string }) {
                 {severity.label}
               </span>
             </div>
-            {task.comment && <p className="text-sm text-muted-foreground">{task.comment}</p>}
+
+            <ReportPhoto path={task.photo_url} alt={`Фото жалобы: ${task.address || "без адреса"}`} />
+
+            <p className="text-xs text-muted-foreground">
+              Отправитель:{" "}
+              {task.reporter
+                ? task.reporter.username
+                  ? `@${task.reporter.username}`
+                  : task.reporter.name
+                : "житель"}
+              {task.reporter?.phone ? ` · ${task.reporter.phone}` : ""}
+            </p>
+            {task.comment && <p className="text-sm text-muted-foreground">«{task.comment}»</p>}
             <p className="text-xs text-muted-foreground">
               Статус: {REPORT_STATUS_LABELS[task.status] ?? task.status} · Награда: {task.worker_reward} кредитов
             </p>
+            <a
+              href={`https://www.google.com/maps?q=${task.lat},${task.lng}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary"
+            >
+              <MapPin className="size-3" /> Открыть точку на карте
+            </a>
+
             {free && (
-              <Button onClick={() => onTake(task.id)} disabled={busyId === task.id} className="h-11 w-full rounded-xl">
-                {busyId === task.id ? <LoaderCircle className="size-4 animate-spin" /> : "Взять задание"}
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button onClick={() => onTake(task.id)} disabled={busyId === task.id} className="h-11 rounded-xl">
+                  {busyId === task.id ? <LoaderCircle className="size-4 animate-spin" /> : "Принять"}
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="h-11 rounded-xl"
+                  onClick={() => dismiss(task.id)}
+                  disabled={busyId === task.id}
+                >
+                  Отклонить
+                </Button>
+              </div>
             )}
             {mine && (
-              <Button
-                variant="secondary"
-                disabled={busyId === task.id}
-                onClick={() => {
-                  setActiveId(task.id);
-                  fileRef.current?.click();
-                }}
-                className="h-11 w-full rounded-xl"
-              >
-                {busyId === task.id ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Upload className="size-4" /> Фото после уборки
-                  </span>
+              <div className="space-y-2">
+                <Button
+                  disabled={busyId === task.id}
+                  onClick={() => {
+                    setActiveId(task.id);
+                    fileRef.current?.click();
+                  }}
+                  className="h-11 w-full rounded-xl"
+                >
+                  {busyId === task.id ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Upload className="size-4" /> Отчёт: фото после уборки
+                    </span>
+                  )}
+                </Button>
+                <p className="text-[11px] text-muted-foreground">
+                  Фото после уборки автоматически уходит автору жалобы в приватный чат.
+                </p>
+                {task.threadId && (
+                  <Link
+                    to="/chat"
+                    search={{ thread: task.threadId }}
+                    className="flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary text-sm font-medium"
+                  >
+                    <MessagesSquare className="size-4" /> Чат с жителем
+                  </Link>
                 )}
-              </Button>
+              </div>
             )}
             {data.isCaptain && (
               <CreditTransferDialog
@@ -654,12 +700,13 @@ function WorkerTasks({ userId }: { userId: string }) {
             )}
             {!free && !mine && (
               <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                <CheckCircle2 className="size-3.5" /> Задание уже взято
+                <CheckCircle2 className="size-3.5" /> Жалобу уже взял другой работник
               </p>
             )}
           </article>
         );
       })}
+
     </div>
   );
 }
