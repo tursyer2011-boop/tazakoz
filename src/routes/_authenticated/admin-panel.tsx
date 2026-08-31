@@ -6,7 +6,7 @@ import { LoaderCircle, ShieldCheck, Users, Trash2, Coins, ClipboardList, MailChe
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole, type AppRole } from "@/hooks/useProfile";
-import { adjustCredits, getAdminOverview, getEmailDiagnostics, listAppUsers, setUserRole } from "@/lib/admin.functions";
+import { adjustCredits, getAdminOverview, getEmailDiagnostics, inviteAdmin, listAdminInvites, listAppUsers, setUserRole } from "@/lib/admin.functions";
 import { reviewApplication } from "@/lib/worker.functions";
 import { getAdminScope, getTeamActivity, grantTeamCredits } from "@/lib/ops.functions";
 import { OpsMap } from "@/components/OpsMap";
@@ -75,6 +75,9 @@ function AdminPage() {
           <TabsTrigger value="email" disabled={!isAdmin}>
             Почта
           </TabsTrigger>
+          <TabsTrigger value="invites" disabled={!isAdmin}>
+            Админы
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="map" className="mt-4">
           {isAdmin ? <RegionMap /> : null}
@@ -96,6 +99,9 @@ function AdminPage() {
         </TabsContent>
         <TabsContent value="email" className="mt-4">
           {isAdmin ? <EmailDiagnostics /> : null}
+        </TabsContent>
+        <TabsContent value="invites" className="mt-4">
+          {isAdmin ? <AdminInvites /> : null}
         </TabsContent>
 
       </Tabs>
@@ -644,5 +650,73 @@ function UserRegistry() {
         </>
       ) : null}
     </div>
+  );
+}
+
+function AdminInvites() {
+  const invite = useServerFn(inviteAdmin);
+  const list = useServerFn(listAdminInvites);
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState("");
+  const [region, setRegion] = useState("");
+  const [city, setCity] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const { data: invites } = useQuery({
+    queryKey: ["admin-invites"],
+    queryFn: () => list({ data: undefined }),
+  });
+
+  const submit = async () => {
+    if (!email.trim()) return;
+    setBusy(true);
+    try {
+      await invite({ data: { email: email.trim(), region, regionCode: "", city } });
+      toast.success("Приглашение создано");
+      setEmail("");
+      queryClient.invalidateQueries({ queryKey: ["admin-invites"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Не удалось создать приглашение");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="space-y-4">
+      <div className="neu-card space-y-3 p-4">
+        <h2 className="text-sm font-semibold">Пригласить администратора</h2>
+        <p className="text-xs text-muted-foreground">
+          Стать админом можно только по приглашению на конкретный e-mail. Пароля доступа недостаточно.
+        </p>
+        <Input placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+        <div className="grid grid-cols-2 gap-2">
+          <Input placeholder="Область" value={region} onChange={(e) => setRegion(e.target.value)} />
+          <Input placeholder="Город" value={city} onChange={(e) => setCity(e.target.value)} />
+        </div>
+        <Button onClick={submit} disabled={busy || !email.trim()} className="w-full">
+          {busy ? <LoaderCircle className="size-4 animate-spin" /> : "Создать приглашение"}
+        </Button>
+      </div>
+
+      <div className="space-y-2">
+        {(invites ?? []).map((row: any) => (
+          <div key={row.id} className="neu-card flex items-center justify-between gap-3 p-3 text-sm">
+            <div className="min-w-0">
+              <p className="truncate font-medium">{row.email}</p>
+              <p className="text-xs text-muted-foreground">
+                {row.city || row.region || "—"} · до {new Date(row.expires_at).toLocaleDateString("ru-RU")}
+              </p>
+            </div>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {row.used_at ? "использовано" : "активно"}
+            </span>
+          </div>
+        ))}
+        {(invites ?? []).length === 0 ? (
+          <p className="px-1 text-xs text-muted-foreground">Приглашений пока нет.</p>
+        ) : null}
+      </div>
+    </section>
   );
 }
