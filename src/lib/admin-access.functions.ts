@@ -26,12 +26,7 @@ function checkPassword(password: string) {
   if (!expected || expected.trim().length < 12) {
     throw new Error("Доступ администратора не настроен. Обратитесь к владельцу платформы.");
   }
-  const provided = password.trim();
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected.trim());
-  if (a.length !== b.length) throw new Error("Неверный пароль доступа");
-  const { timingSafeEqual } = await import("node:crypto").catch(() => ({ timingSafeEqual: null as never }));
-  if (timingSafeEqual && !timingSafeEqual(a, b)) throw new Error("Неверный пароль доступа");
+  if (password.trim() !== expected.trim()) throw new Error("Неверный пароль доступа");
 }
 
 /**
