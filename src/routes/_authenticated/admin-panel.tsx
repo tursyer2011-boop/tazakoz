@@ -15,6 +15,7 @@ import { APPLICATION_STATUS_LABELS } from "@/lib/credits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 
 export const Route = createFileRoute("/_authenticated/admin-panel")({
   head: () => ({
@@ -658,8 +659,7 @@ function AdminInvites() {
   const list = useServerFn(listAdminInvites);
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
-  const [region, setRegion] = useState("");
-  const [city, setCity] = useState("");
+  const [location, setLocation] = useState<PickedLocation | null>(null);
   const [busy, setBusy] = useState(false);
 
   const { data: invites } = useQuery({
@@ -668,12 +668,20 @@ function AdminInvites() {
   });
 
   const submit = async () => {
-    if (!email.trim()) return;
+    if (!email.trim() || !location) return;
     setBusy(true);
     try {
-      await invite({ data: { email: email.trim(), region, regionCode: "", city } });
+      await invite({
+        data: {
+          email: email.trim(),
+          region: location.regionName,
+          regionCode: location.regionCode,
+          city: location.settlement.name,
+        },
+      });
       toast.success("Приглашение создано");
       setEmail("");
+      setLocation(null);
       queryClient.invalidateQueries({ queryKey: ["admin-invites"] });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Не удалось создать приглашение");
@@ -690,11 +698,8 @@ function AdminInvites() {
           Стать админом можно только по приглашению на конкретный e-mail. Пароля доступа недостаточно.
         </p>
         <Input placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
-        <div className="grid grid-cols-2 gap-2">
-          <Input placeholder="Область" value={region} onChange={(e) => setRegion(e.target.value)} />
-          <Input placeholder="Город" value={city} onChange={(e) => setCity(e.target.value)} />
-        </div>
-        <Button onClick={submit} disabled={busy || !email.trim()} className="w-full">
+        <LocationPicker value={location} onChange={setLocation} />
+        <Button onClick={submit} disabled={busy || !email.trim() || !location} className="w-full">
           {busy ? <LoaderCircle className="size-4 animate-spin" /> : "Создать приглашение"}
         </Button>
       </div>
