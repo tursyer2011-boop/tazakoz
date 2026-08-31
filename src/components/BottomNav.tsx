@@ -1,12 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Camera, Droplets, HardHat, Home, ShieldCheck, Trophy, User } from "lucide-react";
+import { Camera, ClipboardCheck, Droplets, HardHat, Home, MessagesSquare, ShieldCheck, Trophy, User } from "lucide-react";
 import { hasRole, useProfile } from "@/hooks/useProfile";
 
 const baseItems = [
   { to: "/map", label: "Главная", icon: Home },
   { to: "/rating", label: "Рейтинг", icon: Trophy },
   { to: "/report", label: "Жалоба", icon: Camera, center: true },
-  { to: "/water", label: "Вода", icon: Droplets },
+  { to: "/chat", label: "Чат", icon: MessagesSquare },
   { to: "/profile", label: "Профиль", icon: User },
 ] as const;
 
@@ -21,10 +21,11 @@ const staffItems = [
 const workerItems = [
   { to: "/map", label: "Главная", icon: Home },
   { to: "/worker", label: "Задания", icon: HardHat },
-  { to: "/report", label: "Жалоба", icon: Camera, center: true },
-  { to: "/rating", label: "Рейтинг", icon: Trophy },
+  { to: "/worker", label: "Отчёт", icon: ClipboardCheck, center: true },
+  { to: "/chat", label: "Чат", icon: MessagesSquare },
   { to: "/profile", label: "Профиль", icon: User },
 ] as const;
+
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -43,7 +44,7 @@ export function BottomNav() {
           const center = "center" in rest && rest.center;
           if (center) {
             return (
-              <li key={to}>
+              <li key={label}>
                 <Link to={to} className="flex flex-col items-center gap-1">
                   <span className="bg-brand-gradient shadow-brand-glow -mt-6 flex size-14 items-center justify-center rounded-full">
                     <Icon className="size-7 text-primary-foreground" strokeWidth={1.75} />
@@ -54,7 +55,7 @@ export function BottomNav() {
             );
           }
           return (
-            <li key={to}>
+            <li key={label}>
               <Link
                 to={to}
                 className={`flex w-14 flex-col items-center gap-1 py-1 ${active ? "text-primary" : "text-muted-foreground"}`}

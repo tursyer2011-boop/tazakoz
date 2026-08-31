@@ -25,8 +25,8 @@ export function pushNotify(title: string, options: { body?: string; tag?: string
   if (Notification.permission !== "granted") return;
   try {
     const n = new Notification(title, {
-      body: options.body,
-      tag: options.tag,
+      ...(options.body ? { body: options.body } : {}),
+      ...(options.tag ? { tag: options.tag } : {}),
       icon: "/favicon.png",
       badge: "/favicon.png",
     });

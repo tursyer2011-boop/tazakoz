@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 
 const PHOTO_PREFIX = "[photo]";
 
-type ChatSearch = { thread?: string };
+type ChatSearch = { thread?: string | undefined };
 
 export const Route = createFileRoute("/_authenticated/chat")({
   validateSearch: (search: Record<string, unknown>): ChatSearch => ({
@@ -98,10 +98,8 @@ function ChatPage() {
   return <ThreadView key={active.id} thread={active} onBack={() => navigate({ search: {} })} meId={me?.user.id} />;
 }
 
-type Thread = NonNullable<ReturnType<typeof useThreadType>>;
-function useThreadType() {
-  return null as unknown as Awaited<ReturnType<typeof getMyThreads>>[number] | null;
-}
+type Thread = Awaited<ReturnType<typeof getMyThreads>>[number];
+
 
 function ThreadView({
   thread,

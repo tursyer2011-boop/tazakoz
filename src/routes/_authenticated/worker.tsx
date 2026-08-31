@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CheckCircle2, Clock, Coins, HardHat, IdCard, LoaderCircle, MapPin, Send, Upload, Users, X } from "lucide-react";
+import { CheckCircle2, Clock, Coins, HardHat, IdCard, LoaderCircle, MapPin, MessagesSquare, Send, Upload, Users, X } from "lucide-react";
+
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole } from "@/hooks/useProfile";
@@ -16,6 +17,10 @@ import { LocationPicker, type PickedLocation } from "@/components/LocationPicker
 import { HireResultOverlay } from "@/components/HireResultOverlay";
 import { APPLICATION_STATUS_LABELS, REPORT_STATUS_LABELS } from "@/lib/credits";
 import { SEVERITY, type Severity } from "@/lib/regions";
+import { ReportPhoto } from "@/components/ReportPhoto";
+import { NotifyPermissionCard } from "@/components/NotifyPermissionCard";
+import { pushNotify } from "@/lib/notify";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -458,6 +463,7 @@ function WorkerTasks({ userId }: { userId: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState<string[]>([]);
   const seenIds = useRef<Set<string> | null>(null);
 
   const board = useQuery({
@@ -466,7 +472,30 @@ function WorkerTasks({ userId }: { userId: string }) {
     refetchInterval: 20_000,
   });
 
-  // Оповещение о новых ближайших вызовах.
+  // Отклонённые жалобы прячем локально — их подхватит ближайший работник.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`taza-dismissed-${userId}`);
+      if (raw) setDismissed(JSON.parse(raw) as string[]);
+    } catch {
+      /* игнорируем повреждённое хранилище */
+    }
+  }, [userId]);
+
+  function dismiss(reportId: string) {
+    setDismissed((prev) => {
+      const next = Array.from(new Set([...prev, reportId])).slice(-200);
+      try {
+        localStorage.setItem(`taza-dismissed-${userId}`, JSON.stringify(next));
+      } catch {
+        /* игнорируем */
+      }
+      return next;
+    });
+    toast.message("Жалоба скрыта — её примет ближайший работник");
+  }
+
+  // Оповещение о новых ближайших жалобах (тост + системное уведомление сайта).
   useEffect(() => {
     const calls = board.data?.calls;
     if (!calls) return;
@@ -476,11 +505,11 @@ function WorkerTasks({ userId }: { userId: string }) {
     }
     const fresh = calls.filter((c) => !seenIds.current!.has(c.id) && !c.assigned_worker_id);
     for (const c of fresh) {
-      toast.info(
-        `Новый вызов рядом: ${c.address || c.water_body || "без адреса"}${
-          c.distanceKm != null ? ` · ${c.distanceKm.toFixed(1)} км` : ""
-        }`,
-      );
+      const where = `${c.address || c.water_body || "без адреса"}${
+        c.distanceKm != null ? ` · ${c.distanceKm.toFixed(1)} км` : ""
+      }`;
+      toast.info(`Новая жалоба рядом: ${where}`);
+      pushNotify("Новая жалоба рядом", { body: where, tag: `call-${c.id}`, url: "/worker" });
     }
     seenIds.current = new Set(calls.map((c) => c.id));
   }, [board.data]);
@@ -489,14 +518,15 @@ function WorkerTasks({ userId }: { userId: string }) {
     setBusyId(reportId);
     try {
       await take({ data: { reportId } });
-      toast.success("Задание закреплено за вами");
+      toast.success("Жалоба принята — открыт чат с жителем");
       await queryClient.invalidateQueries({ queryKey: ["worker-board"] });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Не удалось взять задание");
+      toast.error(err instanceof Error ? err.message : "Не удалось принять жалобу");
     } finally {
       setBusyId(null);
     }
   }
+
 
   async function onAfterPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -541,6 +571,8 @@ function WorkerTasks({ userId }: { userId: string }) {
   const data = board.data;
   if (!data) return null;
   const items = data.calls;
+  const visible = items.filter((c) => c.mine || !dismissed.includes(c.id));
+
 
   return (
     <div className="space-y-4">
@@ -591,13 +623,15 @@ function WorkerTasks({ userId }: { userId: string }) {
         )}
       </section>
 
-      <p className="text-sm font-medium">Ближайшие вызовы ({items.length})</p>
-      {items.length === 0 && (
+      <NotifyPermissionCard text="Разрешите уведомления, чтобы получать сигнал о новой жалобе рядом, даже если вкладка свёрнута." />
+
+      <p className="text-sm font-medium">Входящие жалобы рядом ({visible.length})</p>
+      {visible.length === 0 && (
         <p className="glass-card rounded-3xl p-5 text-center text-sm text-muted-foreground">
-          Свободных заданий рядом пока нет
+          Свободных жалоб рядом пока нет
         </p>
       )}
-      {items.map((task) => {
+      {visible.map((task) => {
         const mine = task.mine;
         const free = !task.assigned_worker_id;
         const severity = SEVERITY[(task.severity as Severity) ?? "low"];
@@ -615,33 +649,77 @@ function WorkerTasks({ userId }: { userId: string }) {
                 {severity.label}
               </span>
             </div>
-            {task.comment && <p className="text-sm text-muted-foreground">{task.comment}</p>}
+
+            <ReportPhoto path={task.photo_url} alt={`Фото жалобы: ${task.address || "без адреса"}`} />
+
+            <p className="text-xs text-muted-foreground">
+              Отправитель:{" "}
+              {task.reporter
+                ? task.reporter.username
+                  ? `@${task.reporter.username}`
+                  : task.reporter.name
+                : "житель"}
+              {task.reporter?.phone ? ` · ${task.reporter.phone}` : ""}
+            </p>
+            {task.comment && <p className="text-sm text-muted-foreground">«{task.comment}»</p>}
             <p className="text-xs text-muted-foreground">
               Статус: {REPORT_STATUS_LABELS[task.status] ?? task.status} · Награда: {task.worker_reward} кредитов
             </p>
+            <a
+              href={`https://www.google.com/maps?q=${task.lat},${task.lng}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary"
+            >
+              <MapPin className="size-3" /> Открыть точку на карте
+            </a>
+
             {free && (
-              <Button onClick={() => onTake(task.id)} disabled={busyId === task.id} className="h-11 w-full rounded-xl">
-                {busyId === task.id ? <LoaderCircle className="size-4 animate-spin" /> : "Взять задание"}
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button onClick={() => onTake(task.id)} disabled={busyId === task.id} className="h-11 rounded-xl">
+                  {busyId === task.id ? <LoaderCircle className="size-4 animate-spin" /> : "Принять"}
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="h-11 rounded-xl"
+                  onClick={() => dismiss(task.id)}
+                  disabled={busyId === task.id}
+                >
+                  Отклонить
+                </Button>
+              </div>
             )}
             {mine && (
-              <Button
-                variant="secondary"
-                disabled={busyId === task.id}
-                onClick={() => {
-                  setActiveId(task.id);
-                  fileRef.current?.click();
-                }}
-                className="h-11 w-full rounded-xl"
-              >
-                {busyId === task.id ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Upload className="size-4" /> Фото после уборки
-                  </span>
+              <div className="space-y-2">
+                <Button
+                  disabled={busyId === task.id}
+                  onClick={() => {
+                    setActiveId(task.id);
+                    fileRef.current?.click();
+                  }}
+                  className="h-11 w-full rounded-xl"
+                >
+                  {busyId === task.id ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Upload className="size-4" /> Отчёт: фото после уборки
+                    </span>
+                  )}
+                </Button>
+                <p className="text-[11px] text-muted-foreground">
+                  Фото после уборки автоматически уходит автору жалобы в приватный чат.
+                </p>
+                {task.threadId && (
+                  <Link
+                    to="/chat"
+                    search={{ thread: task.threadId }}
+                    className="flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary text-sm font-medium"
+                  >
+                    <MessagesSquare className="size-4" /> Чат с жителем
+                  </Link>
                 )}
-              </Button>
+              </div>
             )}
             {data.isCaptain && (
               <CreditTransferDialog
@@ -654,12 +732,13 @@ function WorkerTasks({ userId }: { userId: string }) {
             )}
             {!free && !mine && (
               <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                <CheckCircle2 className="size-3.5" /> Задание уже взято
+                <CheckCircle2 className="size-3.5" /> Жалобу уже взял другой работник
               </p>
             )}
           </article>
         );
       })}
+
     </div>
   );
 }
