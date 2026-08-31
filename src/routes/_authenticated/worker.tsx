@@ -571,6 +571,8 @@ function WorkerTasks({ userId }: { userId: string }) {
   const data = board.data;
   if (!data) return null;
   const items = data.calls;
+  const visible = items.filter((c) => c.mine || !dismissed.includes(c.id));
+
 
   return (
     <div className="space-y-4">
