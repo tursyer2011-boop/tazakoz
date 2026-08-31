@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 
 const PHOTO_PREFIX = "[photo]";
 
-type ChatSearch = { thread?: string };
+type ChatSearch = { thread?: string | undefined };
 
 export const Route = createFileRoute("/_authenticated/chat")({
   validateSearch: (search: Record<string, unknown>): ChatSearch => ({
