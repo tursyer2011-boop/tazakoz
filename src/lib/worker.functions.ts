@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { hasRole } from "@/lib/roles";
 import { analyzeCleanup } from "@/lib/ai.server";
 import { sendTelegram } from "@/lib/telegram.server";
 
@@ -153,14 +154,8 @@ export const reviewApplication = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => ReviewInput.parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isStaff } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    const { data: isModerator } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "moderator",
-    });
+    const isStaff = await hasRole(context.supabase, context.userId, "admin");
+    const isModerator = await hasRole(context.supabase, context.userId, "moderator");
     if (!isStaff && !isModerator) throw new Error("Недостаточно прав");
 
     const { data: application, error } = await context.supabase
@@ -206,10 +201,7 @@ export const takeTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => TakeInput.parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isWorker } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "worker",
-    });
+    const isWorker = await hasRole(context.supabase, context.userId, "worker");
     if (!isWorker) throw new Error("Доступ только для работников");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

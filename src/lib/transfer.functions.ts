@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { hasRole } from "@/lib/roles";
 
 const SearchInput = z.object({ query: z.string().trim().min(1).max(80) });
 
@@ -15,9 +16,9 @@ const TransferInput = z.object({
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function actorRoles(context: { supabase: any; userId: string }) {
-  const [{ data: isAdmin }, { data: isCaptain }] = await Promise.all([
-    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
-    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "captain" }),
+  const [isAdmin, isCaptain] = await Promise.all([
+    hasRole(context.supabase, context.userId, "admin"),
+    hasRole(context.supabase, context.userId, "captain"),
   ]);
   if (!isAdmin && !isCaptain) throw new Error("Недостаточно прав");
   return { isAdmin: Boolean(isAdmin), isCaptain: Boolean(isCaptain) };

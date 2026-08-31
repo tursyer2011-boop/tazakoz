@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { hasRole } from "@/lib/roles";
 
 const RoleInput = z.object({
   userId: z.string().uuid(),
@@ -17,10 +18,7 @@ const CreditInput = z.object({
 export const getAdminOverview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
     if (!isAdmin) throw new Error("Недостаточно прав");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -62,10 +60,7 @@ export const setUserRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => RoleInput.parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
     if (!isAdmin) throw new Error("Недостаточно прав");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -86,10 +81,7 @@ export const setUserRole = createServerFn({ method: "POST" })
 export const getEmailDiagnostics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
     if (!isAdmin) throw new Error("Недостаточно прав");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -116,10 +108,7 @@ export const adjustCredits = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => CreditInput.parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
     if (!isAdmin) throw new Error("Недостаточно прав");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -175,9 +164,9 @@ export const listAppUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => RegistryInput.parse(data ?? {}))
   .handler(async ({ data, context }) => {
-    const [{ data: isAdmin }, { data: isModerator }] = await Promise.all([
-      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
-      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "moderator" }),
+    const [isAdmin, isModerator] = await Promise.all([
+      hasRole(context.supabase, context.userId, "admin"),
+      hasRole(context.supabase, context.userId, "moderator"),
     ]);
     if (!isAdmin && !isModerator) throw new Error("Недостаточно прав");
 
