@@ -17,6 +17,10 @@ import { LocationPicker, type PickedLocation } from "@/components/LocationPicker
 import { HireResultOverlay } from "@/components/HireResultOverlay";
 import { APPLICATION_STATUS_LABELS, REPORT_STATUS_LABELS } from "@/lib/credits";
 import { SEVERITY, type Severity } from "@/lib/regions";
+import { ReportPhoto } from "@/components/ReportPhoto";
+import { NotifyPermissionCard } from "@/components/NotifyPermissionCard";
+import { pushNotify } from "@/lib/notify";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
