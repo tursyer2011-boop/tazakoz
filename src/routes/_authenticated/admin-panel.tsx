@@ -658,8 +658,7 @@ function AdminInvites() {
   const list = useServerFn(listAdminInvites);
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
-  const [region, setRegion] = useState("");
-  const [city, setCity] = useState("");
+  const [location, setLocation] = useState<PickedLocation | null>(null);
   const [busy, setBusy] = useState(false);
 
   const { data: invites } = useQuery({
