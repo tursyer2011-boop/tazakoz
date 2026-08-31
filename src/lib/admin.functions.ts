@@ -195,3 +195,55 @@ export const listAppUsers = createServerFn({ method: "POST" })
       },
     };
   });
+
+const InviteInput = z.object({
+  email: z.string().email().max(200),
+  region: z.string().max(120).default(""),
+  regionCode: z.string().max(20).default(""),
+  city: z.string().max(120).default(""),
+});
+
+/** Действующий админ приглашает нового администратора по конкретному e-mail. */
+export const inviteAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => InviteInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
+    if (!isAdmin) throw new Error("Недостаточно прав");
+
+    const email = data.email.trim().toLowerCase();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    await supabaseAdmin
+      .from("admin_invites")
+      .update({ used_at: new Date().toISOString() })
+      .ilike("email", email)
+      .is("used_at", null);
+
+    const { error } = await supabaseAdmin.from("admin_invites").insert({
+      email,
+      region: data.region,
+      region_code: data.regionCode,
+      city: data.city,
+      created_by: context.userId,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString(),
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true, email };
+  });
+
+/** Список приглашений администраторов. */
+export const listAdminInvites = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
+    if (!isAdmin) throw new Error("Недостаточно прав");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("admin_invites")
+      .select("id, email, region, city, expires_at, used_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    return data ?? [];
+  });
