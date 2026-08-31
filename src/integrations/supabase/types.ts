@@ -858,29 +858,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_access_thread: {
-        Args: { _thread_id: string; _user_id: string }
-        Returns: boolean
-      }
-      get_leaderboard: {
-        Args: { _limit?: number }
-        Returns: {
-          approved_count: number
-          city: string
-          full_name: string
-          id: string
-          total_credits: number
-        }[]
-      }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
       sync_app_user: { Args: { _user_id: string }; Returns: undefined }
-      username_available: { Args: { _username: string }; Returns: boolean }
     }
     Enums: {
       app_role:
