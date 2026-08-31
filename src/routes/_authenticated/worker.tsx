@@ -458,6 +458,7 @@ function WorkerTasks({ userId }: { userId: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState<string[]>([]);
   const seenIds = useRef<Set<string> | null>(null);
 
   const board = useQuery({
@@ -466,7 +467,30 @@ function WorkerTasks({ userId }: { userId: string }) {
     refetchInterval: 20_000,
   });
 
-  // Оповещение о новых ближайших вызовах.
+  // Отклонённые жалобы прячем локально — их подхватит ближайший работник.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`taza-dismissed-${userId}`);
+      if (raw) setDismissed(JSON.parse(raw) as string[]);
+    } catch {
+      /* игнорируем повреждённое хранилище */
+    }
+  }, [userId]);
+
+  function dismiss(reportId: string) {
+    setDismissed((prev) => {
+      const next = Array.from(new Set([...prev, reportId])).slice(-200);
+      try {
+        localStorage.setItem(`taza-dismissed-${userId}`, JSON.stringify(next));
+      } catch {
+        /* игнорируем */
+      }
+      return next;
+    });
+    toast.message("Жалоба скрыта — её примет ближайший работник");
+  }
+
+  // Оповещение о новых ближайших жалобах (тост + системное уведомление сайта).
   useEffect(() => {
     const calls = board.data?.calls;
     if (!calls) return;
@@ -476,11 +500,11 @@ function WorkerTasks({ userId }: { userId: string }) {
     }
     const fresh = calls.filter((c) => !seenIds.current!.has(c.id) && !c.assigned_worker_id);
     for (const c of fresh) {
-      toast.info(
-        `Новый вызов рядом: ${c.address || c.water_body || "без адреса"}${
-          c.distanceKm != null ? ` · ${c.distanceKm.toFixed(1)} км` : ""
-        }`,
-      );
+      const where = `${c.address || c.water_body || "без адреса"}${
+        c.distanceKm != null ? ` · ${c.distanceKm.toFixed(1)} км` : ""
+      }`;
+      toast.info(`Новая жалоба рядом: ${where}`);
+      pushNotify("Новая жалоба рядом", { body: where, tag: `call-${c.id}`, url: "/worker" });
     }
     seenIds.current = new Set(calls.map((c) => c.id));
   }, [board.data]);
@@ -489,14 +513,15 @@ function WorkerTasks({ userId }: { userId: string }) {
     setBusyId(reportId);
     try {
       await take({ data: { reportId } });
-      toast.success("Задание закреплено за вами");
+      toast.success("Жалоба принята — открыт чат с жителем");
       await queryClient.invalidateQueries({ queryKey: ["worker-board"] });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Не удалось взять задание");
+      toast.error(err instanceof Error ? err.message : "Не удалось принять жалобу");
     } finally {
       setBusyId(null);
     }
   }
+
 
   async function onAfterPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
