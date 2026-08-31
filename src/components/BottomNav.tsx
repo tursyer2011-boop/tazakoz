@@ -44,7 +44,7 @@ export function BottomNav() {
           const center = "center" in rest && rest.center;
           if (center) {
             return (
-              <li key={to}>
+              <li key={label}>
                 <Link to={to} className="flex flex-col items-center gap-1">
                   <span className="bg-brand-gradient shadow-brand-glow -mt-6 flex size-14 items-center justify-center rounded-full">
                     <Icon className="size-7 text-primary-foreground" strokeWidth={1.75} />
@@ -55,7 +55,7 @@ export function BottomNav() {
             );
           }
           return (
-            <li key={to}>
+            <li key={label}>
               <Link
                 to={to}
                 className={`flex w-14 flex-col items-center gap-1 py-1 ${active ? "text-primary" : "text-muted-foreground"}`}
