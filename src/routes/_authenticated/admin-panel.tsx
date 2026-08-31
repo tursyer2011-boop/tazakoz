@@ -15,6 +15,7 @@ import { APPLICATION_STATUS_LABELS } from "@/lib/credits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 
 export const Route = createFileRoute("/_authenticated/admin-panel")({
   head: () => ({
@@ -667,12 +668,20 @@ function AdminInvites() {
   });
 
   const submit = async () => {
-    if (!email.trim()) return;
+    if (!email.trim() || !location) return;
     setBusy(true);
     try {
-      await invite({ data: { email: email.trim(), region, regionCode: "", city } });
+      await invite({
+        data: {
+          email: email.trim(),
+          region: location.regionName,
+          regionCode: location.regionCode,
+          city: location.settlement.name,
+        },
+      });
       toast.success("Приглашение создано");
       setEmail("");
+      setLocation(null);
       queryClient.invalidateQueries({ queryKey: ["admin-invites"] });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Не удалось создать приглашение");
