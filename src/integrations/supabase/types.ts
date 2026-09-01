@@ -292,6 +292,42 @@ export type Database = {
         }
         Relationships: []
       }
+      donations: {
+        Row: {
+          amount_kzt: number
+          created_at: string
+          credits: number
+          full_name: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          amount_kzt: number
+          created_at?: string
+          credits: number
+          full_name?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          username?: string
+        }
+        Update: {
+          amount_kzt?: number
+          created_at?: string
+          credits?: number
+          full_name?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       email_delivery_log: {
         Row: {
           created_at: string
