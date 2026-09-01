@@ -340,3 +340,52 @@ function CashoutCard({
     </div>
   );
 }
+
+/** Пожертвование кредитов на благотворительность: указывается только сумма в кредитах. */
+function DonateCard({ credits, onDone }: { credits: number; onDone: () => void }) {
+  const submit = useServerFn(donateCredits);
+  const [amount, setAmount] = useState(String(MIN_DONATION_CREDITS));
+  const [busy, setBusy] = useState(false);
+  const value = Number(amount) || 0;
+
+  async function send() {
+    setBusy(true);
+    try {
+      const res = await submit({ data: { credits: value } });
+      toast.success(`Спасибо! Пожертвовано ${res.credits} кредитов (${res.amount} ₸)`);
+      setAmount(String(MIN_DONATION_CREDITS));
+      onDone();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Не удалось отправить пожертвование");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <Heart className="size-5 text-primary" strokeWidth={1.6} /> Пожертвовать на благотворительность
+      </p>
+      <p className="text-xs text-muted-foreground">
+        1 кредит = {KZT_PER_CREDIT} ₸. Минимум {MIN_DONATION_CREDITS} кредитов.
+      </p>
+      <Input
+        inputMode="numeric"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
+        placeholder="Сколько кредитов"
+        className="h-11 rounded-xl"
+        aria-label="Сумма пожертвования в кредитах"
+      />
+      <Button
+        variant="secondary"
+        className="h-12 w-full rounded-xl"
+        disabled={busy || value < MIN_DONATION_CREDITS || value > credits}
+        onClick={() => void send()}
+      >
+        {busy ? "Отправляем…" : `Пожертвовать ${value * KZT_PER_CREDIT} ₸`}
+      </Button>
+    </div>
+  );
+}
