@@ -341,19 +341,12 @@ function EmailDiagnostics() {
 function Applications() {
   const queryClient = useQueryClient();
   const review = useServerFn(reviewApplication);
+  const loadApps = useServerFn(listWorkerApplications);
   const [busy, setBusy] = useState<string | null>(null);
 
   const apps = useQuery({
     queryKey: ["worker-applications"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("worker_applications")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(80);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => loadApps({ data: undefined }),
   });
 
   async function decide(applicationId: string, decision: "approved" | "rejected") {
