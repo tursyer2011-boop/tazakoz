@@ -220,16 +220,23 @@ export const inviteAdmin = createServerFn({ method: "POST" })
       .ilike("email", email)
       .is("used_at", null);
 
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60_000);
     const { error } = await supabaseAdmin.from("admin_invites").insert({
       email,
       region: data.region,
       region_code: data.regionCode,
       city: data.city,
       created_by: context.userId,
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString(),
+      expires_at: expiresAt.toISOString(),
     });
     if (error) throw new Error(error.message);
-    return { ok: true, email };
+
+    const { sendAdminInviteEmail } = await import("@/lib/email.server");
+    const mail = await sendAdminInviteEmail(email, data.region, data.city, expiresAt);
+    if (!mail.sent) {
+      throw new Error(`Приглашение сохранено, но письмо не ушло: ${mail.error ?? "неизвестная ошибка"}`);
+    }
+    return { ok: true, email, emailSent: true };
   });
 
 /** Список приглашений администраторов. */
