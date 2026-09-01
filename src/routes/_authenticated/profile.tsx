@@ -182,6 +182,11 @@ function ProfilePage() {
         }}
       />
 
+      <DonateCard
+        credits={profile?.credits ?? 0}
+        onDone={() => void queryClient.invalidateQueries({ queryKey: ["profile", user?.id] })}
+      />
+
       {(payouts.data ?? []).length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium">Заявки на вывод</p>
