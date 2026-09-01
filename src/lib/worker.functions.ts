@@ -118,19 +118,48 @@ export const applyAsWorker = createServerFn({ method: "POST" })
       throw new Error(error.message);
     }
 
+    const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+    const signDoc = async (path: string | null | undefined) => {
+      if (!path) return null;
+      const { data: signed } = await admin.storage.from("worker-docs").createSignedUrl(path, 60 * 60 * 24 * 3);
+      return signed?.signedUrl ?? null;
+    };
+    const docLinks = (
+      await Promise.all(
+        (
+          [
+            ["Документ (лицевая)", data.docFrontUrl],
+            ["Документ (обратная)", data.docBackUrl],
+            ["Селфи", data.selfieUrl],
+            ["Документ представителя", data.parentDocUrl],
+          ] as const
+        ).map(async ([label, path]) => {
+          const url = await signDoc(path);
+          return url ? `🔗 <a href="${url}">${label}</a>` : null;
+        }),
+      )
+    )
+      .filter(Boolean)
+      .join("\n");
+
     const telegram = await sendTelegram(
-      `🧹 <b>Новая заявка ${isMinor ? "волонтёра 16–17 лет" : "работника"} TAZA KÖZ</b>\n` +
-        `ФИО: ${data.fullName}\nТелефон: ${data.phone}\n` +
-        `Возраст: ${age}\n` +
-        `ИИН: ${data.iin}\n` +
-        `Документ: ${DOC_LABELS[data.docType]} ${data.docNumber ? `№ ${data.docNumber}` : "—"}\n` +
+      `🧹 <b>НОВАЯ ЗАЯВКА ${isMinor ? "ВОЛОНТЁРА 16–17" : "РАБОТНИКА"}</b>\n` +
+        `━━━━━━━━━━━━━━━\n` +
+        `👤 <b>${data.fullName}</b>\n` +
+        `📱 <code>${data.phone}</code>\n` +
+        `🎂 Возраст: ${age}\n` +
+        `🪪 ИИН: <code>${data.iin}</code>\n` +
+        `📄 ${DOC_LABELS[data.docType]} ${data.docNumber ? `№ ${data.docNumber}` : "—"}\n` +
         (isMinor
-          ? `Представитель: ${data.parentFullName} (${data.parentContact}) — согласие получено\n`
+          ? `👨‍👩‍👦 Представитель: ${data.parentFullName} (${data.parentContact}) — согласие получено\n`
           : "") +
-        `Родители: ${data.fatherName || "—"} / ${data.motherName || "—"}\n` +
-        `Регион: ${data.region} · ${data.city}\n` +
-        `Транспорт: ${data.hasTransport ? "есть" : "нет"}\n` +
-        `Опыт: ${data.experience || "—"}\nО себе: ${data.about || "—"}`,
+        `👪 Родители: ${data.fatherName || "—"} / ${data.motherName || "—"}\n` +
+        `📍 ${data.region} · ${data.city}\n` +
+        `🚗 Транспорт: ${data.hasTransport ? "есть ✅" : "нет ❌"}\n` +
+        `🛠 Опыт: ${data.experience || "—"}\n` +
+        `💬 О себе: ${data.about || "—"}\n` +
+        (docLinks ? `━━━━━━━━━━━━━━━\n${docLinks}\n` : "") +
+        `━━━━━━━━━━━━━━━`,
       [
         [
           { text: "✅ Одобрить", callback_data: `wapp:approve:${application.id}` },
