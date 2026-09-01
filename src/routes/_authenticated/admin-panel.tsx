@@ -6,7 +6,7 @@ import { LoaderCircle, ShieldCheck, Users, Trash2, Coins, ClipboardList, MailChe
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole, type AppRole } from "@/hooks/useProfile";
-import { adjustCredits, getAdminOverview, getEmailDiagnostics, inviteAdmin, listAdminInvites, listAppUsers, setUserRole } from "@/lib/admin.functions";
+import { adjustCredits, getAdminOverview, getEmailDiagnostics, inviteAdmin, listAdminInvites, listAppUsers, listWorkerApplications, setUserRole } from "@/lib/admin.functions";
 import { reviewApplication } from "@/lib/worker.functions";
 import { getAdminScope, getTeamActivity, grantTeamCredits } from "@/lib/ops.functions";
 import { OpsMap } from "@/components/OpsMap";
