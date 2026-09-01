@@ -2,12 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sendTelegram } from "@/lib/telegram.server";
-import { KZT_PER_CREDIT, MIN_PAYOUT_CREDITS } from "@/lib/credits";
+import { KZT_PER_CREDIT, MIN_PAYOUT_CREDITS, MIN_DONATION_CREDITS } from "@/lib/credits";
 
 const PayoutInput = z.object({
   credits: z.number().int().min(MIN_PAYOUT_CREDITS).max(100000),
   fullName: z.string().trim().min(3).max(120),
   phone: z.string().trim().min(10).max(20),
+});
+
+const DonationInput = z.object({
+  credits: z.number().int().min(MIN_DONATION_CREDITS).max(100000),
 });
 
 /** Resident requests a Kaspi cashout: credits are held and admins decide in Telegram. */
