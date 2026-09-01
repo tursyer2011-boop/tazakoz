@@ -254,3 +254,38 @@ export const listAdminInvites = createServerFn({ method: "POST" })
       .limit(50);
     return data ?? [];
   });
+
+/** Заявки работников со ссылками на документы (для админ-панели). */
+export const listWorkerApplications = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
+    const isModerator = await hasRole(context.supabase, context.userId, "moderator");
+    if (!isAdmin && !isModerator) throw new Error("Недостаточно прав");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("worker_applications")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(80);
+    if (error) throw new Error(error.message);
+
+    const sign = async (path: string | null) => {
+      if (!path) return null;
+      const { data: signed } = await supabaseAdmin.storage.from("worker-docs").createSignedUrl(path, 3600);
+      return signed?.signedUrl ?? null;
+    };
+
+    return await Promise.all(
+      (data ?? []).map(async (app) => ({
+        ...app,
+        docs: {
+          front: await sign(app.doc_front_url),
+          back: await sign(app.doc_back_url),
+          selfie: await sign(app.selfie_url),
+          parent: await sign(app.parent_doc_url),
+        },
+      })),
+    );
+  });
