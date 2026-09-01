@@ -60,7 +60,6 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           }
 
           if (adminPassword && text.replace(/^\/code\s+/i, "") === adminPassword) {
-            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
             await supabaseAdmin
               .from("telegram_admin_chats")
               .upsert(
