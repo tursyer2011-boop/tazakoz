@@ -378,9 +378,45 @@ function Applications() {
           <p className="text-muted-foreground">
             {app.phone} · {app.region} {app.city}
           </p>
+          <p className="text-muted-foreground">
+            ИИН: {app.iin || "—"} · Возраст: {app.applicant_age ?? "—"} · Док: {app.doc_type} {app.doc_number || ""}
+          </p>
+          <p className="text-muted-foreground">
+            Родители: {app.father_name || "—"} / {app.mother_name || "—"}
+          </p>
+          {app.parent_full_name && (
+            <p className="text-muted-foreground">
+              Представитель: {app.parent_full_name} ({app.parent_contact}) ·{" "}
+              {app.parent_consent ? "согласие есть" : "нет согласия"}
+            </p>
+          )}
           {app.experience && <p className="text-muted-foreground">Опыт: {app.experience}</p>}
           {app.about && <p className="text-muted-foreground">О себе: {app.about}</p>}
           <p className="text-xs text-muted-foreground">Транспорт: {app.has_transport ? "есть" : "нет"}</p>
+          {(app.docs.front || app.docs.back || app.docs.selfie || app.docs.parent) && (
+            <div className="grid grid-cols-4 gap-2 pt-1">
+              {([
+                ["Лицевая", app.docs.front],
+                ["Обратная", app.docs.back],
+                ["Селфи", app.docs.selfie],
+                ["Родитель", app.docs.parent],
+              ] as const).map(([label, url]) =>
+                url ? (
+                  <a
+                    key={label}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="overflow-hidden rounded-xl border border-border"
+                    aria-label={`Документ: ${label}`}
+                  >
+                    <img src={url} alt={label} className="h-20 w-full object-cover" loading="lazy" />
+                    <span className="block py-1 text-center text-[0.65rem] text-muted-foreground">{label}</span>
+                  </a>
+                ) : null,
+              )}
+            </div>
+          )}
           {app.status === "pending" && (
             <div className="flex gap-2 pt-1">
               <Button size="sm" className="flex-1 rounded-xl" disabled={busy === app.id} onClick={() => decide(app.id, "approved")}>
