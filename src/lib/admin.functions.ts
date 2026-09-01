@@ -220,16 +220,23 @@ export const inviteAdmin = createServerFn({ method: "POST" })
       .ilike("email", email)
       .is("used_at", null);
 
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60_000);
     const { error } = await supabaseAdmin.from("admin_invites").insert({
       email,
       region: data.region,
       region_code: data.regionCode,
       city: data.city,
       created_by: context.userId,
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString(),
+      expires_at: expiresAt.toISOString(),
     });
     if (error) throw new Error(error.message);
-    return { ok: true, email };
+
+    const { sendAdminInviteEmail } = await import("@/lib/email.server");
+    const mail = await sendAdminInviteEmail(email, data.region, data.city, expiresAt);
+    if (!mail.sent) {
+      throw new Error(`Приглашение сохранено, но письмо не ушло: ${mail.error ?? "неизвестная ошибка"}`);
+    }
+    return { ok: true, email, emailSent: true };
   });
 
 /** Список приглашений администраторов. */
@@ -246,4 +253,39 @@ export const listAdminInvites = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(50);
     return data ?? [];
+  });
+
+/** Заявки работников со ссылками на документы (для админ-панели). */
+export const listWorkerApplications = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
+    const isModerator = await hasRole(context.supabase, context.userId, "moderator");
+    if (!isAdmin && !isModerator) throw new Error("Недостаточно прав");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("worker_applications")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(80);
+    if (error) throw new Error(error.message);
+
+    const sign = async (path: string | null) => {
+      if (!path) return null;
+      const { data: signed } = await supabaseAdmin.storage.from("worker-docs").createSignedUrl(path, 3600);
+      return signed?.signedUrl ?? null;
+    };
+
+    return await Promise.all(
+      (data ?? []).map(async (app) => ({
+        ...app,
+        docs: {
+          front: await sign(app.doc_front_url),
+          back: await sign(app.doc_back_url),
+          selfie: await sign(app.selfie_url),
+          parent: await sign(app.parent_doc_url),
+        },
+      })),
+    );
   });

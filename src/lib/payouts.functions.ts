@@ -2,12 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sendTelegram } from "@/lib/telegram.server";
-import { KZT_PER_CREDIT, MIN_PAYOUT_CREDITS } from "@/lib/credits";
+import { KZT_PER_CREDIT, MIN_PAYOUT_CREDITS, MIN_DONATION_CREDITS } from "@/lib/credits";
 
 const PayoutInput = z.object({
   credits: z.number().int().min(MIN_PAYOUT_CREDITS).max(100000),
   fullName: z.string().trim().min(3).max(120),
   phone: z.string().trim().min(10).max(20),
+});
+
+const DonationInput = z.object({
+  credits: z.number().int().min(MIN_DONATION_CREDITS).max(100000),
 });
 
 /** Resident requests a Kaspi cashout: credits are held and admins decide in Telegram. */
@@ -71,3 +75,65 @@ export const requestPayout = createServerFn({ method: "POST" })
     return { ok: true, amount };
   });
 
+
+/** Житель жертвует кредиты на благотворительность: заявка уходит админам в Telegram. */
+export const donateCredits = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => DonationInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("credits, full_name, first_name, last_name, patronymic, username")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (!profile) throw new Error("Профиль не найден");
+    if (profile.credits < data.credits) throw new Error("Недостаточно кредитов");
+
+    const amount = data.credits * KZT_PER_CREDIT;
+    const fio =
+      [profile.last_name, profile.first_name, profile.patronymic].filter(Boolean).join(" ").trim() ||
+      profile.full_name ||
+      "Без имени";
+    const username = profile.username ? `@${profile.username}` : "—";
+
+    const { data: donation, error } = await supabaseAdmin
+      .from("donations")
+      .insert({
+        user_id: context.userId,
+        credits: data.credits,
+        amount_kzt: amount,
+        full_name: fio,
+        username: profile.username ?? "",
+      })
+      .select()
+      .single();
+    if (error || !donation) throw new Error("Не удалось оформить пожертвование");
+
+    await supabaseAdmin
+      .from("profiles")
+      .update({ credits: profile.credits - data.credits })
+      .eq("id", context.userId);
+
+    await supabaseAdmin.from("credit_transactions").insert({
+      user_id: context.userId,
+      amount: -data.credits,
+      kind: "donation",
+      note: `Пожертвование на благотворительность · ${amount} ₸`,
+    });
+
+    const clean = (value: string) => value.replace(/[<>&]/g, "");
+    await sendTelegram(
+      `💚 <b>НОВОЕ ПОЖЕРТВОВАНИЕ</b> 💚\n` +
+        `━━━━━━━━━━━━━━━\n` +
+        `👤 <b>${clean(fio)}</b>\n` +
+        `🆔 ${clean(username)}\n` +
+        `🪙 Кредитов: <b>${data.credits}</b>\n` +
+        `💰 Сумма: <b>${amount} ₸</b>\n` +
+        `━━━━━━━━━━━━━━━\n` +
+        `🌊 Спасибо за поддержку чистых водоёмов!`,
+    );
+
+    return { ok: true, amount, credits: data.credits };
+  });

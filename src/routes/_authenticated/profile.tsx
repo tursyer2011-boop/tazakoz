@@ -3,10 +3,10 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { HardHat, LogOut, MapPin, MessagesSquare, ShieldCheck, Wallet } from "lucide-react";
+import { HardHat, Heart, LogOut, MapPin, MessagesSquare, ShieldCheck, Wallet } from "lucide-react";
 import { getMyTeam } from "@/lib/ops.functions";
-import { KZT_PER_CREDIT, MIN_PAYOUT_CREDITS } from "@/lib/credits";
-import { requestPayout } from "@/lib/payouts.functions";
+import { KZT_PER_CREDIT, MIN_PAYOUT_CREDITS, MIN_DONATION_CREDITS } from "@/lib/credits";
+import { requestPayout, donateCredits } from "@/lib/payouts.functions";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
@@ -182,6 +182,11 @@ function ProfilePage() {
         }}
       />
 
+      <DonateCard
+        credits={profile?.credits ?? 0}
+        onDone={() => void queryClient.invalidateQueries({ queryKey: ["profile", user?.id] })}
+      />
+
       {(payouts.data ?? []).length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium">Заявки на вывод</p>
@@ -331,6 +336,55 @@ function CashoutCard({
         onClick={() => void send()}
       >
         {busy ? "Отправляем…" : `Вывести ${value * KZT_PER_CREDIT} ₸`}
+      </Button>
+    </div>
+  );
+}
+
+/** Пожертвование кредитов на благотворительность: указывается только сумма в кредитах. */
+function DonateCard({ credits, onDone }: { credits: number; onDone: () => void }) {
+  const submit = useServerFn(donateCredits);
+  const [amount, setAmount] = useState(String(MIN_DONATION_CREDITS));
+  const [busy, setBusy] = useState(false);
+  const value = Number(amount) || 0;
+
+  async function send() {
+    setBusy(true);
+    try {
+      const res = await submit({ data: { credits: value } });
+      toast.success(`Спасибо! Пожертвовано ${res.credits} кредитов (${res.amount} ₸)`);
+      setAmount(String(MIN_DONATION_CREDITS));
+      onDone();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Не удалось отправить пожертвование");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <Heart className="size-5 text-primary" strokeWidth={1.6} /> Пожертвовать на благотворительность
+      </p>
+      <p className="text-xs text-muted-foreground">
+        1 кредит = {KZT_PER_CREDIT} ₸. Минимум {MIN_DONATION_CREDITS} кредитов.
+      </p>
+      <Input
+        inputMode="numeric"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
+        placeholder="Сколько кредитов"
+        className="h-11 rounded-xl"
+        aria-label="Сумма пожертвования в кредитах"
+      />
+      <Button
+        variant="secondary"
+        className="h-12 w-full rounded-xl"
+        disabled={busy || value < MIN_DONATION_CREDITS || value > credits}
+        onClick={() => void send()}
+      >
+        {busy ? "Отправляем…" : `Пожертвовать ${value * KZT_PER_CREDIT} ₸`}
       </Button>
     </div>
   );

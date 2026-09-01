@@ -32,6 +32,24 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           const chatId = message.chat.id;
           const text = message.text.trim();
 
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: known } = await supabaseAdmin
+            .from("telegram_admin_chats")
+            .select("chat_id")
+            .eq("chat_id", chatId)
+            .maybeSingle();
+
+          if (known) {
+            if (text.startsWith("/start") || text.startsWith("/status")) {
+              await sendTelegram(
+                `👁 <b>TAZA KÖZ</b>\n\n✅ Этот чат уже подключён как админский.\nЗаявки работников, выплаты и пожертвования приходят сюда автоматически.`,
+                undefined,
+                chatId,
+              );
+            }
+            return Response.json({ ok: true });
+          }
+
           if (text.startsWith("/start")) {
             await sendTelegram(
               `👁 <b>TAZA KÖZ</b>\n\nЧтобы получать заявки работников, отправьте код доступа сообщением.`,
@@ -42,7 +60,6 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           }
 
           if (adminPassword && text.replace(/^\/code\s+/i, "") === adminPassword) {
-            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
             await supabaseAdmin
               .from("telegram_admin_chats")
               .upsert(
