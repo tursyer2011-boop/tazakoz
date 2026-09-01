@@ -22,5 +22,6 @@ export const REPORT_STATUS_LABELS: Record<string, string> = {
   resolved: "Проверено и закрыто",
 };
 
-export const KZT_PER_CREDIT = 10;
+export const KZT_PER_CREDIT = 5;
 export const MIN_PAYOUT_CREDITS = 50;
+export const MIN_DONATION_CREDITS = 10;
