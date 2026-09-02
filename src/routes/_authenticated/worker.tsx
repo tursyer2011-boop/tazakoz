@@ -582,8 +582,8 @@ function WorkerTasks({ userId }: { userId: string }) {
       <section className="glass-card space-y-3 rounded-3xl p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">ID работника</p>
-            <p className="text-2xl font-semibold tracking-widest text-brand-gradient">{workerCode(userId)}</p>
+            <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Ваш ID (пункт назначения)</p>
+            <p className="text-2xl font-semibold tracking-widest text-brand-gradient">{data.depot?.code ?? "—"}</p>
             <p className="text-xs text-muted-foreground">
               {data.profile?.username ? `@${data.profile.username}` : data.profile?.full_name || ""}
             </p>
@@ -594,8 +594,9 @@ function WorkerTasks({ userId }: { userId: string }) {
         </div>
         <p className="flex items-center gap-1 text-sm text-muted-foreground">
           <MapPin className="size-4" /> Зона работы:{" "}
-          {data.depot ? `${data.depot.name} · ${data.depot.city} (${data.depot.code})` : data.profile?.city || "не назначена"}
+          {data.depot ? `${data.depot.name} · ${data.depot.city}` : data.profile?.city || "не назначена"}
         </p>
+        {data.depot?.address && <p className="text-xs text-muted-foreground">Адрес: {data.depot.address}</p>}
         {data.origin && (
           <OpsMap
             heightClass="h-64"
