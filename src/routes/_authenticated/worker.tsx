@@ -773,6 +773,7 @@ function MyTeamCard() {
         depotCode={depot?.code}
         depotName={depot?.name}
         depotCity={depot?.city}
+        depotAddress={depot?.address}
         teamCode={t.team_code}
       />
       <div className="glass-card space-y-2 rounded-3xl p-4">
