@@ -82,6 +82,7 @@ export async function resolveWorkerDepot(
     candidates.push(...(data ?? []));
   }
   if (!candidates.length) {
+    // Без региона работника точку назначения подбираем только по его координатам.
     if (opts.lat != null && opts.lng != null) {
       const point = await nearestDepot(admin, opts.lat, opts.lng);
       if (point) return point.depot;
@@ -89,12 +90,14 @@ export async function resolveWorkerDepot(
     return null;
   }
 
+  // Строго внутри выбранной области: город приоритетнее, иначе ближайший пункт этой же области.
   const city = opts.city ? norm(opts.city) : "";
   const inCity = city ? candidates.filter((d) => norm(d.city ?? "").includes(city) || city.includes(norm(d.city ?? ""))) : [];
   const pool = inCity.length ? inCity : candidates;
   if (opts.lat != null && opts.lng != null) {
     pool.sort((a, b) => haversineKm(opts.lat!, opts.lng!, a.lat, a.lng) - haversineKm(opts.lat!, opts.lng!, b.lat, b.lng));
   }
+
 
 
   // Prefer a point whose crews are not full yet.

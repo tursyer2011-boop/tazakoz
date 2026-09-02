@@ -9,12 +9,13 @@ type Props = {
   depotCode?: string | null | undefined;
   depotName?: string | null | undefined;
   depotCity?: string | null | undefined;
+  depotAddress?: string | null | undefined;
   teamCode?: string | null | undefined;
   note?: string | null | undefined;
 };
 
 /** Full-screen animated result of a worker application decision. */
-export function HireResultOverlay({ storageKey, status, depotCode, depotName, depotCity, teamCode, note }: Props) {
+export function HireResultOverlay({ storageKey, status, depotCode, depotName, depotCity, depotAddress, teamCode, note }: Props) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -57,12 +58,13 @@ export function HireResultOverlay({ storageKey, status, depotCode, depotName, de
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">Ваша работа началась. Вот ваш пункт назначения:</p>
             <div className="rounded-2xl bg-secondary/70 p-4">
-              <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">ID пункта</p>
+              <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Ваш ID работника</p>
               <p className="text-brand-gradient text-3xl font-semibold tracking-widest">{depotCode ?? "—"}</p>
               <p className="mt-1 flex items-center justify-center gap-1 text-sm text-muted-foreground">
                 <MapPin className="size-4" /> {depotName ?? "—"}
                 {depotCity ? ` · ${depotCity}` : ""}
               </p>
+              {depotAddress && <p className="mt-1 text-xs text-muted-foreground">{depotAddress}</p>}
               {teamCode && <p className="mt-1 text-xs text-muted-foreground">Команда №{teamCode}</p>}
             </div>
           </div>

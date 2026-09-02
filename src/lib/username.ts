@@ -16,10 +16,3 @@ export function isValidUsername(value: string) {
 export function fallbackUsername() {
   return `user_${Math.floor(10000 + Math.random() * 90000)}`;
 }
-
-/** Публичный ID работника вида WRK-84920 — стабильно выводится из его user id. */
-export function workerCode(userId: string) {
-  const hex = userId.replace(/[^0-9a-f]/gi, "").slice(0, 8);
-  const num = parseInt(hex || "0", 16) % 100000;
-  return `WRK-${String(num).padStart(5, "0")}`;
-}

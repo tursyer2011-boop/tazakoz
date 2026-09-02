@@ -11,7 +11,6 @@ import { applyAsWorker, completeTask, takeTask } from "@/lib/worker.functions";
 import { awardResidentCredits, getMyTeam, getWorkerBoard, requestTeamCredits } from "@/lib/ops.functions";
 import { CreditTransferDialog } from "@/components/CreditTransferDialog";
 import { OpsMap } from "@/components/OpsMap";
-import { workerCode } from "@/lib/username";
 import { resizeImage, signedPhotoUrl, urlToDataUrl } from "@/lib/photos";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 import { HireResultOverlay } from "@/components/HireResultOverlay";
@@ -582,8 +581,8 @@ function WorkerTasks({ userId }: { userId: string }) {
       <section className="glass-card space-y-3 rounded-3xl p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">ID работника</p>
-            <p className="text-2xl font-semibold tracking-widest text-brand-gradient">{workerCode(userId)}</p>
+            <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Ваш ID (пункт назначения)</p>
+            <p className="text-2xl font-semibold tracking-widest text-brand-gradient">{data.depot?.code ?? "—"}</p>
             <p className="text-xs text-muted-foreground">
               {data.profile?.username ? `@${data.profile.username}` : data.profile?.full_name || ""}
             </p>
@@ -594,8 +593,9 @@ function WorkerTasks({ userId }: { userId: string }) {
         </div>
         <p className="flex items-center gap-1 text-sm text-muted-foreground">
           <MapPin className="size-4" /> Зона работы:{" "}
-          {data.depot ? `${data.depot.name} · ${data.depot.city} (${data.depot.code})` : data.profile?.city || "не назначена"}
+          {data.depot ? `${data.depot.name} · ${data.depot.city}` : data.profile?.city || "не назначена"}
         </p>
+        {data.depot?.address && <p className="text-xs text-muted-foreground">Адрес: {data.depot.address}</p>}
         {data.origin && (
           <OpsMap
             heightClass="h-64"
@@ -615,7 +615,7 @@ function WorkerTasks({ userId }: { userId: string }) {
                   ]
                 : []
             }
-            teams={[{ team_id: "me", lat: data.origin.lat, lng: data.origin.lng, status: "вы", code: workerCode(userId) }]}
+            teams={[{ team_id: "me", lat: data.origin.lat, lng: data.origin.lng, status: "вы", code: data.depot?.code ?? "вы" }]}
             calls={items
               .filter((c) => c.lat != null && c.lng != null)
               .map((c) => ({ id: c.id, lat: c.lat, lng: c.lng, severity: c.severity, address: c.address || "" }))}
@@ -773,6 +773,7 @@ function MyTeamCard() {
         depotCode={depot?.code}
         depotName={depot?.name}
         depotCity={depot?.city}
+        depotAddress={depot?.address}
         teamCode={t.team_code}
       />
       <div className="glass-card space-y-2 rounded-3xl p-4">
