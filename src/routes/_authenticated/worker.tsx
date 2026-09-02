@@ -11,7 +11,6 @@ import { applyAsWorker, completeTask, takeTask } from "@/lib/worker.functions";
 import { awardResidentCredits, getMyTeam, getWorkerBoard, requestTeamCredits } from "@/lib/ops.functions";
 import { CreditTransferDialog } from "@/components/CreditTransferDialog";
 import { OpsMap } from "@/components/OpsMap";
-import { workerCode } from "@/lib/username";
 import { resizeImage, signedPhotoUrl, urlToDataUrl } from "@/lib/photos";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 import { HireResultOverlay } from "@/components/HireResultOverlay";
@@ -616,7 +615,7 @@ function WorkerTasks({ userId }: { userId: string }) {
                   ]
                 : []
             }
-            teams={[{ team_id: "me", lat: data.origin.lat, lng: data.origin.lng, status: "вы", code: workerCode(userId) }]}
+            teams={[{ team_id: "me", lat: data.origin.lat, lng: data.origin.lng, status: "вы", code: data.depot?.code ?? "вы" }]}
             calls={items
               .filter((c) => c.lat != null && c.lng != null)
               .map((c) => ({ id: c.id, lat: c.lat, lng: c.lng, severity: c.severity, address: c.address || "" }))}
