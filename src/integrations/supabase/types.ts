@@ -256,6 +256,7 @@ export type Database = {
       depots: {
         Row: {
           active: boolean
+          address: string
           city: string
           code: string
           created_at: string
@@ -268,6 +269,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          address?: string
           city?: string
           code: string
           created_at?: string
@@ -280,6 +282,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          address?: string
           city?: string
           code?: string
           created_at?: string
