@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Brain,
   Camera,
@@ -21,7 +21,9 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { useEffect } from "react";
 import { useSession } from "@/hooks/useSession";
+import { useProfile, hasRole } from "@/hooks/useProfile";
 import avatarErnar from "@/assets/team-ernar.jpg";
 import avatarAlmagul from "@/assets/team-almagul.jpg";
 import avatarKarakat from "@/assets/team-karakat.jpg";
@@ -111,6 +113,15 @@ const FOOTER_LINKS = [
 
 function LandingPage() {
   const { session } = useSession();
+  const navigate = useNavigate();
+  const { data: me } = useProfile();
+  const isWorker = hasRole(me?.roles, "worker", "captain");
+
+  // Принятый работник сразу попадает в свой кабинет, минуя главную и вход.
+  useEffect(() => {
+    if (isWorker) void navigate({ to: "/worker", replace: true });
+  }, [isWorker, navigate]);
+
   const primaryTo = session ? "/map" : "/auth";
   const primaryLabel = session ? "Открыть карту" : "Начать";
 
