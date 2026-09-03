@@ -15,6 +15,7 @@ import { WheelDatePicker } from "@/components/WheelDatePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { getEmailVerificationStatus, requestEmailOtp, verifyEmailOtp } from "@/lib/otp.functions";
+import { getVerifiedCache, setVerifiedCache } from "@/lib/verified-cache";
 
 export const Route = createFileRoute("/auth/")({
   head: () => ({
@@ -67,12 +68,17 @@ function AuthScreen() {
 
   useEffect(() => {
     if (loading || !session || step === "verify") return;
+    if (getVerifiedCache(session.user.id)) {
+      navigate({ to: "/map", replace: true });
+      return;
+    }
     let cancelled = false;
     void (async () => {
       try {
         const status = await checkStatus({});
         if (cancelled) return;
         if (status.verified) {
+          setVerifiedCache(session.user.id);
           navigate({ to: "/map", replace: true });
           return;
         }
@@ -228,6 +234,8 @@ function AuthScreen() {
     try {
       await checkOtp({ data: { code: token, purpose: mode === "signup" ? "signup" : "login" } });
       toast.success("Почта подтверждена");
+      const { data: authed } = await supabase.auth.getUser();
+      if (authed.user) setVerifiedCache(authed.user.id);
       navigate({ to: "/map", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Неверный код");
@@ -250,7 +258,9 @@ function AuthScreen() {
     }
   }
 
-  if (loading) {
+  // Пока идёт проверка существующей сессии, не показываем форму входа — иначе
+  // авторизованный пользователь на секунду видит регистрацию.
+  if (loading || (session && step === "form")) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <LoaderCircle className="size-6 animate-spin text-primary" />
