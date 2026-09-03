@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_bootstrap: {
+        Row: {
+          created_at: string
+          id: boolean
+          updated_at: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: boolean
+          updated_at?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: boolean
+          updated_at?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       admin_invites: {
         Row: {
           city: string
@@ -478,6 +502,8 @@ export type Database = {
         Row: {
           admin_activated_at: string | null
           admin_city: string
+          admin_expires_at: string | null
+          admin_permanent: boolean
           admin_region: string
           admin_region_code: string
           approved_count: number
@@ -509,6 +535,8 @@ export type Database = {
         Insert: {
           admin_activated_at?: string | null
           admin_city?: string
+          admin_expires_at?: string | null
+          admin_permanent?: boolean
           admin_region?: string
           admin_region_code?: string
           approved_count?: number
@@ -540,6 +568,8 @@ export type Database = {
         Update: {
           admin_activated_at?: string | null
           admin_city?: string
+          admin_expires_at?: string | null
+          admin_permanent?: boolean
           admin_region?: string
           admin_region_code?: string
           approved_count?: number
@@ -844,6 +874,7 @@ export type Database = {
           father_name: string
           full_name: string
           has_transport: boolean
+          hidden_at: string | null
           id: string
           iin: string
           mother_name: string
@@ -876,6 +907,7 @@ export type Database = {
           father_name?: string
           full_name: string
           has_transport?: boolean
+          hidden_at?: string | null
           id?: string
           iin?: string
           mother_name?: string
@@ -908,6 +940,7 @@ export type Database = {
           father_name?: string
           full_name?: string
           has_transport?: boolean
+          hidden_at?: string | null
           id?: string
           iin?: string
           mother_name?: string
