@@ -15,7 +15,7 @@ import { WheelDatePicker } from "@/components/WheelDatePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { getEmailVerificationStatus, requestEmailOtp, verifyEmailOtp } from "@/lib/otp.functions";
-import { getVerifiedCache, setVerifiedCache } from "@/lib/verified-cache";
+import { getVerifiedCache, setVerifiedCache, clearVerifiedCache } from "@/lib/verified-cache";
 
 export const Route = createFileRoute("/auth/")({
   head: () => ({
@@ -324,6 +324,7 @@ function AuthScreen() {
                 <button
                   type="button"
                   onClick={async () => {
+                    clearVerifiedCache();
                     await supabase.auth.signOut();
                     setPassword("");
                     setCode(EMPTY_CODE);

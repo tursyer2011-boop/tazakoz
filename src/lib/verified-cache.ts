@@ -30,3 +30,13 @@ export function clearVerifiedCache() {
     /* ignore */
   }
 }
+
+export function hasAnyVerifiedCache(): boolean {
+  if (memo) return true;
+  if (typeof window === "undefined") return false;
+  try {
+    return Boolean(window.sessionStorage.getItem(KEY));
+  } catch {
+    return false;
+  }
+}
