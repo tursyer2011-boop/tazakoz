@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const RequestInput = z.object({
-  password: z.string().min(3).max(100),
+  password: z.string().max(100).default(""),
   email: z.string().email(),
   region: z.string().min(2).max(120),
   regionCode: z.string().min(1).max(20),
@@ -10,7 +10,7 @@ const RequestInput = z.object({
 });
 
 const ActivateInput = z.object({
-  password: z.string().min(3).max(100),
+  password: z.string().max(100).default(""),
   email: z.string().email(),
   code: z.string().regex(/^\d{6}$/),
   region: z.string().min(2).max(120),
@@ -19,6 +19,7 @@ const ActivateInput = z.object({
 });
 
 const TTL_MINUTES = 10;
+const ACCESS_DAYS = 30;
 
 /** Пароль доступа берётся только из секрета. Нет секрета — вход закрыт. */
 function checkPassword(password: string) {
@@ -29,17 +30,21 @@ function checkPassword(password: string) {
   if (password.trim() !== expected.trim()) throw new Error("Неверный пароль доступа");
 }
 
-/**
- * Пароля недостаточно: e-mail должен быть заранее приглашён действующим админом.
- * Исключение — первичная настройка, когда админов в системе ещё нет.
- */
-async function requireInvite(supabaseAdmin: any, email: string) {
-  const { count } = await supabaseAdmin
-    .from("user_roles")
-    .select("id", { count: "exact", head: true })
-    .eq("role", "admin");
+/** Открыта ли одноразовая первичная регистрация владельца. */
+async function bootstrapOpen(supabaseAdmin: any) {
+  const { data } = await supabaseAdmin.from("admin_bootstrap").select("used_at").eq("id", true).maybeSingle();
+  return !data?.used_at;
+}
 
-  if ((count ?? 0) === 0) return null; // bootstrap первого администратора
+/**
+ * Режим входа: пока не создан первый (постоянный) админ — вход по служебному паролю.
+ * После этого пароль не работает никогда: только приглашение действующего админа.
+ */
+async function resolveMode(supabaseAdmin: any, password: string, email: string) {
+  if (await bootstrapOpen(supabaseAdmin)) {
+    checkPassword(password);
+    return { bootstrap: true as const, invite: null };
+  }
 
   const { data: invite } = await supabaseAdmin
     .from("admin_invites")
@@ -54,20 +59,25 @@ async function requireInvite(supabaseAdmin: any, email: string) {
   if (new Date(invite.expires_at).getTime() < Date.now()) {
     throw new Error("Срок действия приглашения истёк. Попросите админа выслать новое.");
   }
-  return invite;
+  return { bootstrap: false as const, invite };
 }
+
+/** Публичный статус страницы /admin: открыта ли первичная регистрация владельца. */
+export const getAdminGateStatus = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return { bootstrapOpen: await bootstrapOpen(supabaseAdmin) };
+});
 
 export const requestAdminAccess = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => RequestInput.parse(data))
   .handler(async ({ data }) => {
-    checkPassword(data.password);
     const email = data.email.trim().toLowerCase();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { hashOtp, randomOtp } = await import("@/lib/otp.server");
     const { sendOtpEmail } = await import("@/lib/email.server");
 
-    await requireInvite(supabaseAdmin, email);
+    await resolveMode(supabaseAdmin, data.password, email);
 
     const { data: last } = await supabaseAdmin
       .from("email_otps")
@@ -105,13 +115,12 @@ export const requestAdminAccess = createServerFn({ method: "POST" })
 export const activateAdminAccess = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => ActivateInput.parse(data))
   .handler(async ({ data }) => {
-    checkPassword(data.password);
     const email = data.email.trim().toLowerCase();
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { hashOtp } = await import("@/lib/otp.server");
 
-    const invite = await requireInvite(supabaseAdmin, email);
+    const mode = await resolveMode(supabaseAdmin, data.password, email);
 
     const { data: record } = await supabaseAdmin
       .from("email_otps")
@@ -148,28 +157,36 @@ export const activateAdminAccess = createServerFn({ method: "POST" })
       userId = created.user!.id;
     }
 
-    await supabaseAdmin
-      .from("profiles")
-      .upsert(
-        {
-          id: userId,
-          admin_region: data.region,
-          admin_region_code: data.regionCode,
-          admin_city: data.city,
-          admin_activated_at: new Date().toISOString(),
-          email_verified_at: new Date().toISOString(),
-        },
-        { onConflict: "id" },
-      );
+    const expiresAt = mode.bootstrap ? null : new Date(Date.now() + ACCESS_DAYS * 24 * 60 * 60_000).toISOString();
+
+    await supabaseAdmin.from("profiles").upsert(
+      {
+        id: userId,
+        admin_region: data.region,
+        admin_region_code: data.regionCode,
+        admin_city: data.city,
+        admin_activated_at: new Date().toISOString(),
+        admin_permanent: mode.bootstrap,
+        admin_expires_at: expiresAt,
+        email_verified_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
     await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id,role" });
 
-    if (invite) {
+    if (mode.bootstrap) {
+      // Страница первичной регистрации закрывается навсегда.
+      await supabaseAdmin
+        .from("admin_bootstrap")
+        .update({ used_at: new Date().toISOString(), used_by: userId, updated_at: new Date().toISOString() })
+        .eq("id", true);
+    } else if (mode.invite) {
       await supabaseAdmin
         .from("admin_invites")
         .update({ used_at: new Date().toISOString() })
-        .eq("id", invite.id);
+        .eq("id", mode.invite.id);
     }
 
     const { data: link, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
@@ -178,5 +195,11 @@ export const activateAdminAccess = createServerFn({ method: "POST" })
     });
     if (linkError) throw new Error(linkError.message);
 
-    return { ok: true, email, otp: link.properties?.email_otp ?? "" };
+    return {
+      ok: true,
+      email,
+      permanent: mode.bootstrap,
+      expiresAt,
+      otp: link.properties?.email_otp ?? "",
+    };
   });
