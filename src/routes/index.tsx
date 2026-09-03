@@ -23,6 +23,7 @@ import {
 import { Logo } from "@/components/Logo";
 import { useEffect } from "react";
 import { useSession } from "@/hooks/useSession";
+import { hasAnyVerifiedCache } from "@/lib/verified-cache";
 import { useProfile, hasRole } from "@/hooks/useProfile";
 import avatarErnar from "@/assets/team-ernar.jpg";
 import avatarAlmagul from "@/assets/team-almagul.jpg";
@@ -122,18 +123,21 @@ function LandingPage() {
     if (isWorker) void navigate({ to: "/worker", replace: true });
   }, [isWorker, navigate]);
 
-  const primaryTo = session ? "/map" : "/auth";
-  const primaryLabel = session ? "Открыть карту" : "Начать";
+  // Пока сессия подгружается, ориентируемся на кэш прошлого входа,
+  // чтобы кнопка сразу вела на карту, а не на форму входа.
+  const signedIn = session ? true : hasAnyVerifiedCache();
+  const primaryTo = signedIn ? "/map" : "/auth";
+  const primaryLabel = signedIn ? "Открыть карту" : "Начать";
 
   return (
     <main className="mx-auto w-full max-w-5xl px-5 pb-0">
       <header className="flex items-center justify-between py-5">
         <Logo compact />
         <Link
-          to="/auth"
+          to={signedIn ? "/profile" : "/auth"}
           className="neu-raised rounded-full px-4 py-2 text-sm font-medium text-foreground"
         >
-          {session ? "Профиль" : "Войти"}
+          {signedIn ? "Профиль" : "Войти"}
         </Link>
       </header>
 

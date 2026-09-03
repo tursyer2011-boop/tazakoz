@@ -3,15 +3,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { CreditsHeader } from "@/components/CreditsHeader";
 import { getEmailVerificationStatus } from "@/lib/otp.functions";
+import { getVerifiedCache, setVerifiedCache, clearVerifiedCache } from "@/lib/verified-cache";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
+    // Уже проверяли в этой сессии — пропускаем без ожидания сервера.
+    if (getVerifiedCache(data.user.id)) return { user: data.user };
     try {
       const status = await getEmailVerificationStatus({});
-      if (!status.verified) throw redirect({ to: "/auth" });
+      if (!status.verified) {
+        clearVerifiedCache();
+        throw redirect({ to: "/auth" });
+      }
+      setVerifiedCache(data.user.id);
     } catch (err) {
       if (isRedirect(err)) throw err;
       throw redirect({ to: "/auth" });
@@ -20,6 +27,7 @@ export const Route = createFileRoute("/_authenticated")({
   },
   component: AuthedLayout,
 });
+
 
 function AuthedLayout() {
   return (

@@ -9,6 +9,7 @@ import { KZT_PER_CREDIT, MIN_PAYOUT_CREDITS, MIN_DONATION_CREDITS } from "@/lib/
 import { requestPayout, donateCredits } from "@/lib/payouts.functions";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { clearVerifiedCache } from "@/lib/verified-cache";
 import { useSession } from "@/hooks/useSession";
 import { useProfile, hasRole } from "@/hooks/useProfile";
 import { SEVERITY, STATUS_LABELS, type Severity } from "@/lib/regions";
@@ -98,6 +99,7 @@ function ProfilePage() {
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
+    clearVerifiedCache();
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
