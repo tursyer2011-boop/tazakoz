@@ -134,7 +134,7 @@ function LandingPage() {
       <header className="flex items-center justify-between py-5">
         <Logo compact />
         <Link
-          to={signedIn ? "/map" : "/auth"}
+          to={signedIn ? "/profile" : "/auth"}
           className="neu-raised rounded-full px-4 py-2 text-sm font-medium text-foreground"
         >
           {signedIn ? "Профиль" : "Войти"}
