@@ -498,6 +498,42 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          photo_url: string
+          price_kzt: number
+          published: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          photo_url?: string
+          price_kzt?: number
+          published?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          photo_url?: string
+          price_kzt?: number
+          published?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           admin_activated_at: string | null
