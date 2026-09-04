@@ -3,6 +3,11 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { hasRole } from "@/lib/roles";
 
+async function requireAdmin(supabase: any, userId: string) {
+  const { assertActiveAdmin } = await import("@/lib/admin-guard.server");
+  await assertActiveAdmin(supabase, userId);
+}
+
 const RoleInput = z.object({
   userId: z.string().uuid(),
   role: z.enum(["user", "volunteer", "worker", "captain", "moderator", "admin"]),
@@ -18,8 +23,7 @@ const CreditInput = z.object({
 export const getAdminOverview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
-    if (!isAdmin) throw new Error("Недостаточно прав");
+    await requireAdmin(context.supabase, context.userId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [users, reports, resolved, pendingApps, credits] = await Promise.all([
@@ -60,8 +64,7 @@ export const setUserRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => RoleInput.parse(data))
   .handler(async ({ data, context }) => {
-    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
-    if (!isAdmin) throw new Error("Недостаточно прав");
+    await requireAdmin(context.supabase, context.userId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     if (data.action === "grant") {
@@ -81,8 +84,7 @@ export const setUserRole = createServerFn({ method: "POST" })
 export const getEmailDiagnostics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
-    if (!isAdmin) throw new Error("Недостаточно прав");
+    await requireAdmin(context.supabase, context.userId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: events } = await supabaseAdmin
@@ -108,8 +110,7 @@ export const adjustCredits = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => CreditInput.parse(data))
   .handler(async ({ data, context }) => {
-    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
-    if (!isAdmin) throw new Error("Недостаточно прав");
+    await requireAdmin(context.supabase, context.userId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -164,11 +165,8 @@ export const listAppUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => RegistryInput.parse(data ?? {}))
   .handler(async ({ data, context }) => {
-    const [isAdmin, isModerator] = await Promise.all([
-      hasRole(context.supabase, context.userId, "admin"),
-      hasRole(context.supabase, context.userId, "moderator"),
-    ]);
-    if (!isAdmin && !isModerator) throw new Error("Недостаточно прав");
+    const isModerator = await hasRole(context.supabase, context.userId, "moderator");
+    if (!isModerator) await requireAdmin(context.supabase, context.userId);
 
     let query = context.supabase
       .from("app_users")
@@ -208,8 +206,7 @@ export const inviteAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => InviteInput.parse(data))
   .handler(async ({ data, context }) => {
-    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
-    if (!isAdmin) throw new Error("Недостаточно прав");
+    await requireAdmin(context.supabase, context.userId);
 
     const email = data.email.trim().toLowerCase();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -243,8 +240,7 @@ export const inviteAdmin = createServerFn({ method: "POST" })
 export const listAdminInvites = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
-    if (!isAdmin) throw new Error("Недостаточно прав");
+    await requireAdmin(context.supabase, context.userId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin
@@ -259,14 +255,14 @@ export const listAdminInvites = createServerFn({ method: "POST" })
 export const listWorkerApplications = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const isAdmin = await hasRole(context.supabase, context.userId, "admin");
     const isModerator = await hasRole(context.supabase, context.userId, "moderator");
-    if (!isAdmin && !isModerator) throw new Error("Недостаточно прав");
+    if (!isModerator) await requireAdmin(context.supabase, context.userId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("worker_applications")
       .select("*")
+      .is("hidden_at", null)
       .order("created_at", { ascending: false })
       .limit(80);
     if (error) throw new Error(error.message);
