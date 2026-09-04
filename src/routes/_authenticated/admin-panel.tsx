@@ -6,7 +6,7 @@ import { LoaderCircle, ShieldCheck, Users, Trash2, Coins, ClipboardList, MailChe
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole, type AppRole } from "@/hooks/useProfile";
-import { adjustCredits, getAdminOverview, getEmailDiagnostics, inviteAdmin, listAdminInvites, listAppUsers, listWorkerApplications, setUserRole } from "@/lib/admin.functions";
+import { adjustCredits, getAdminOverview, getEmailDiagnostics, inviteAdmin, listAdminInvites, listAppUsers, listWorkerApplications, hideWorkerApplication, setUserRole } from "@/lib/admin.functions";
 import { reviewApplication } from "@/lib/worker.functions";
 import { getAdminScope, getTeamActivity, grantTeamCredits } from "@/lib/ops.functions";
 import { OpsMap } from "@/components/OpsMap";
@@ -342,7 +342,9 @@ function Applications() {
   const queryClient = useQueryClient();
   const review = useServerFn(reviewApplication);
   const loadApps = useServerFn(listWorkerApplications);
+  const hideApp = useServerFn(hideWorkerApplication);
   const [busy, setBusy] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const apps = useQuery({
     queryKey: ["worker-applications"],
@@ -362,6 +364,20 @@ function Applications() {
     }
   }
 
+  async function hide(applicationId: string) {
+    setBusy(applicationId);
+    try {
+      await hideApp({ data: { applicationId } });
+      toast.success("Заявка убрана — копия сохранена в Telegram-боте");
+      setConfirmId(null);
+      await queryClient.invalidateQueries({ queryKey: ["worker-applications"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Ошибка");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (apps.isLoading) return <LoaderCircle className="mx-auto size-5 animate-spin text-primary" />;
   const items = apps.data ?? [];
   if (items.length === 0)
@@ -370,11 +386,48 @@ function Applications() {
   return (
     <div className="space-y-3">
       {items.map((app) => (
-        <article key={app.id} className="glass-card space-y-2 rounded-3xl p-4 text-sm">
+        <article key={app.id} className="glass-card relative space-y-2 overflow-hidden rounded-3xl p-4 text-sm">
           <div className="flex items-center justify-between gap-2">
             <p className="font-medium">{app.full_name}</p>
-            <span className="text-xs text-muted-foreground">{APPLICATION_STATUS_LABELS[app.status]}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{APPLICATION_STATUS_LABELS[app.status]}</span>
+              <button
+                type="button"
+                aria-label="Убрать заявку"
+                onClick={() => setConfirmId(app.id)}
+                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="size-4" />
+              </button>
+            </div>
           </div>
+
+          {confirmId === app.id && (
+            <div className="absolute inset-0 z-10 flex animate-in fade-in zoom-in-95 flex-col items-center justify-center gap-3 rounded-3xl bg-destructive/95 p-4 text-center duration-200">
+              <Trash2 className="size-8 animate-pulse text-destructive-foreground" />
+              <p className="text-sm font-semibold text-destructive-foreground">
+                Убрать заявку из панели? Решение сохранится, копия уйдёт в Telegram-бот.
+              </p>
+              <div className="flex w-full gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="flex-1 rounded-xl"
+                  onClick={() => setConfirmId(null)}
+                >
+                  Отмена
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 rounded-xl bg-background text-destructive hover:bg-background/90"
+                  disabled={busy === app.id}
+                  onClick={() => hide(app.id)}
+                >
+                  {busy === app.id ? <LoaderCircle className="size-4 animate-spin" /> : "Удалить"}
+                </Button>
+              </div>
+            </div>
+          )}
           <p className="text-muted-foreground">
             {app.phone} · {app.region} {app.city}
           </p>

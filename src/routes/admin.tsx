@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { CheckCircle2, KeyRound, LoaderCircle, MailCheck, ShieldCheck } from "lucide-react";
+import { CheckCircle2, KeyRound, LoaderCircle, Lock, MailCheck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { activateAdminAccess, requestAdminAccess } from "@/lib/admin-access.functions";
+import { activateAdminAccess, getAdminGateStatus, requestAdminAccess } from "@/lib/admin-access.functions";
 import { loadRegions, loadSettlements, searchSettlements, type KzRegion, type Settlement } from "@/lib/geo";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ function AdminGate() {
   const request = useServerFn(requestAdminAccess);
   const activate = useServerFn(activateAdminAccess);
 
+  const gateStatus = useServerFn(getAdminGateStatus);
+  const [bootstrapOpen, setBootstrapOpen] = useState<boolean | null>(null);
   const [step, setStep] = useState<Step>("password");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
@@ -43,6 +45,16 @@ function AdminGate() {
   const [city, setCity] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    void gateStatus({})
+      .then((s) => {
+        setBootstrapOpen(s.bootstrapOpen);
+        if (!s.bootstrapOpen) setStep("details");
+      })
+      .catch(() => setBootstrapOpen(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     void loadRegions().then(setRegions).catch(() => toast.error("Не удалось загрузить регионы"));
@@ -98,7 +110,23 @@ function AdminGate() {
       <h1 className="sr-only">Вход для администраторов TAZA KÖZ</h1>
 
       <div className="glass-card w-full max-w-md rounded-3xl p-6">
-        {step === "password" && (
+        {bootstrapOpen === null && (
+          <div className="flex justify-center py-10">
+            <LoaderCircle className="size-6 animate-spin text-primary" />
+          </div>
+        )}
+
+        {bootstrapOpen === false && step === "details" && (
+          <div className="mb-4 flex items-start gap-2 rounded-2xl border border-border bg-secondary/50 p-3 text-xs text-muted-foreground">
+            <Lock className="mt-0.5 size-4 shrink-0 text-primary" />
+            <span>
+              Первичная регистрация владельца закрыта навсегда. Вход только по приглашению действующего
+              администратора — доступ выдаётся на 30 дней.
+            </span>
+          </div>
+        )}
+
+        {bootstrapOpen === true && step === "password" && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-primary">
               <KeyRound className="size-5" />
@@ -124,7 +152,7 @@ function AdminGate() {
           </div>
         )}
 
-        {step === "details" && (
+        {bootstrapOpen !== null && step === "details" && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-primary">
               <ShieldCheck className="size-5" />
@@ -197,7 +225,7 @@ function AdminGate() {
           </div>
         )}
 
-        {step === "code" && (
+        {bootstrapOpen !== null && step === "code" && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-primary">
               <MailCheck className="size-5" />
@@ -230,7 +258,9 @@ function AdminGate() {
             <span className="bg-brand-gradient shadow-brand-glow flex size-20 animate-[ping_1.4s_ease-out_1] items-center justify-center rounded-full">
               <CheckCircle2 className="size-10 text-primary-foreground" />
             </span>
-            <p className="text-lg font-semibold text-foreground">Админство подтверждено</p>
+            <p className="text-lg font-semibold text-foreground">
+              {bootstrapOpen ? "Вы — постоянный администратор" : "Доступ выдан на 30 дней"}
+            </p>
             <p className="text-sm text-muted-foreground">
               {region} · {city}. Открываем панель контролёра…
             </p>
