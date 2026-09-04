@@ -285,3 +285,48 @@ export const listWorkerApplications = createServerFn({ method: "POST" })
       })),
     );
   });
+
+const HideInput = z.object({ applicationId: z.string().uuid() });
+
+/**
+ * Убирает заявку из панели (решение сохраняется в БД и дублируется в Telegram-бот).
+ * Статус заявки не меняется — только скрытие с глаз.
+ */
+export const hideWorkerApplication = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => HideInput.parse(data))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: app, error } = await supabaseAdmin
+      .from("worker_applications")
+      .select("*")
+      .eq("id", data.applicationId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!app) throw new Error("Заявка не найдена");
+
+    const statusLabel =
+      app.status === "approved" ? "Одобрена" : app.status === "rejected" ? "Отклонена" : "На рассмотрении";
+
+    const { sendTelegram } = await import("@/lib/telegram.server");
+    await sendTelegram(
+      [
+        "🗂 <b>Заявка убрана из панели (архив)</b>",
+        `ФИО: ${app.full_name}`,
+        `Телефон: ${app.phone}`,
+        `Регион: ${app.region} ${app.city}`,
+        `ИИН: ${app.iin || "—"} · Док: ${app.doc_type} ${app.doc_number || ""}`,
+        `Решение: <b>${statusLabel}</b> (не изменено)`,
+        `ID: <code>${app.id}</code>`,
+      ].join("\n"),
+    );
+
+    await supabaseAdmin
+      .from("worker_applications")
+      .update({ hidden_at: new Date().toISOString() })
+      .eq("id", data.applicationId);
+
+    return { ok: true };
+  });
