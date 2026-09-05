@@ -595,13 +595,75 @@ function UsersAdmin() {
       {users.map((u) => {
         const userRoles = roles.filter((r) => r.user_id === u.id).map((r) => r.role as AppRole);
         return (
-          <article key={u.id} className="glass-card space-y-3 rounded-3xl p-4 text-sm">
-            <div>
-              <p className="font-medium">{u.full_name || "Без имени"}</p>
-              <p className="text-xs text-muted-foreground">
-                {u.region} {u.city} · {u.credits} кредитов
-              </p>
+          <article key={u.id} className="glass-card relative space-y-3 rounded-3xl p-4 text-sm">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                {editId === u.id ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="ФИО"
+                      className="h-9 rounded-xl"
+                    />
+                    <Button size="sm" className="rounded-xl" disabled={busyUser !== null} onClick={() => saveName(u.id)}>
+                      OK
+                    </Button>
+                    <Button size="sm" variant="ghost" className="rounded-xl" onClick={() => setEditId(null)}>
+                      Отмена
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="truncate font-medium">{u.full_name || "Без имени"}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {u.region} {u.city} · {u.credits} кредитов
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <button
+                  type="button"
+                  aria-label="Изменить имя"
+                  onClick={() => {
+                    setEditId(u.id);
+                    setEditName(u.full_name || "");
+                  }}
+                  className="rounded-full bg-secondary p-2 text-muted-foreground"
+                >
+                  <Pencil className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Удалить пользователя"
+                  onClick={() => setDeleteId(u.id)}
+                  className="rounded-full bg-secondary p-2 text-destructive"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
             </div>
+
+            {deleteId === u.id && (
+              <div className="space-y-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-3">
+                <p className="text-xs text-destructive">
+                  Удалить пользователя навсегда? Профиль и почта освободятся, восстановить нельзя.
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" className="rounded-xl" onClick={() => setDeleteId(null)}>
+                    Отмена
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="rounded-xl"
+                    disabled={busyUser !== null}
+                    onClick={() => removeUser(u.id)}
+                  >
+                    {busyUser === u.id ? "..." : "Удалить"}
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="flex flex-wrap gap-1.5">
               {ROLES.map((role) => {
                 const active = userRoles.includes(role);
