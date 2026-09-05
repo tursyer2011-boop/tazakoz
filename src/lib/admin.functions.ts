@@ -330,3 +330,60 @@ export const hideWorkerApplication = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+const RenameInput = z.object({
+  userId: z.string().uuid(),
+  fullName: z.string().trim().min(2).max(120),
+});
+
+/** Изменить отображаемое имя пользователя. */
+export const renameAppUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => RenameInput.parse(data))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const parts = data.fullName.split(/\s+/);
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        full_name: data.fullName,
+        last_name: parts[0] ?? "",
+        first_name: parts[1] ?? "",
+        patronymic: parts.slice(2).join(" "),
+      })
+      .eq("id", data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+const DeleteUserInput = z.object({ userId: z.string().uuid() });
+
+/** Полностью удалить пользователя: аккаунт, профиль и следы почты. */
+export const deleteAppUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => DeleteUserInput.parse(data))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    if (data.userId === context.userId) throw new Error("Нельзя удалить самого себя");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    const email = (authUser?.user?.email ?? "").toLowerCase();
+
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
+    await supabaseAdmin.from("app_users").delete().eq("id", data.userId);
+    await supabaseAdmin.from("profiles").delete().eq("id", data.userId);
+
+    if (email) {
+      await supabaseAdmin.from("email_otps").delete().eq("email", email);
+      await supabaseAdmin.from("admin_invites").delete().ilike("email", email);
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) throw new Error(error.message);
+
+    return { ok: true };
+  });
