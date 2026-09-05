@@ -2,11 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { LoaderCircle, ShieldCheck, Users, Trash2, Coins, ClipboardList, MailCheck, MapPin, Search } from "lucide-react";
+import { LoaderCircle, ShieldCheck, Users, Trash2, Coins, ClipboardList, MailCheck, MapPin, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole, type AppRole } from "@/hooks/useProfile";
-import { adjustCredits, getAdminOverview, getEmailDiagnostics, inviteAdmin, listAdminInvites, listAppUsers, listWorkerApplications, hideWorkerApplication, setUserRole } from "@/lib/admin.functions";
+import { adjustCredits, getAdminOverview, getEmailDiagnostics, inviteAdmin, listAdminInvites, listAppUsers, listWorkerApplications, hideWorkerApplication, setUserRole, renameAppUser, deleteAppUser } from "@/lib/admin.functions";
 import { reviewApplication } from "@/lib/worker.functions";
 import { getAdminScope, getTeamActivity, grantTeamCredits } from "@/lib/ops.functions";
 import { OpsMap } from "@/components/OpsMap";
@@ -545,10 +545,47 @@ function UsersAdmin() {
   const load = useServerFn(getAdminOverview);
   const changeRole = useServerFn(setUserRole);
   const changeCredits = useServerFn(adjustCredits);
+  const rename = useServerFn(renameAppUser);
+  const remove = useServerFn(deleteAppUser);
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [pendingCredits, setPendingCredits] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [busyUser, setBusyUser] = useState<string | null>(null);
 
   const overview = useQuery({ queryKey: ["admin-overview"], queryFn: () => load({ data: undefined }) });
+
+  async function saveName(userId: string) {
+    if (editName.trim().length < 2) return;
+    setBusyUser(userId);
+    try {
+      await rename({ data: { userId, fullName: editName.trim() } });
+      setEditId(null);
+      await queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      await queryClient.invalidateQueries({ queryKey: ["app-users"] });
+      toast.success("Имя обновлено");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Ошибка");
+    } finally {
+      setBusyUser(null);
+    }
+  }
+
+  async function removeUser(userId: string) {
+    setBusyUser(userId);
+    try {
+      await remove({ data: { userId } });
+      setDeleteId(null);
+      await queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      await queryClient.invalidateQueries({ queryKey: ["app-users"] });
+      toast.success("Пользователь удалён");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Ошибка");
+    } finally {
+      setBusyUser(null);
+    }
+  }
 
   if (overview.isLoading) return <LoaderCircle className="mx-auto size-5 animate-spin text-primary" />;
   if (overview.error)
@@ -595,13 +632,75 @@ function UsersAdmin() {
       {users.map((u) => {
         const userRoles = roles.filter((r) => r.user_id === u.id).map((r) => r.role as AppRole);
         return (
-          <article key={u.id} className="glass-card space-y-3 rounded-3xl p-4 text-sm">
-            <div>
-              <p className="font-medium">{u.full_name || "Без имени"}</p>
-              <p className="text-xs text-muted-foreground">
-                {u.region} {u.city} · {u.credits} кредитов
-              </p>
+          <article key={u.id} className="glass-card relative space-y-3 rounded-3xl p-4 text-sm">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                {editId === u.id ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="ФИО"
+                      className="h-9 rounded-xl"
+                    />
+                    <Button size="sm" className="rounded-xl" disabled={busyUser !== null} onClick={() => saveName(u.id)}>
+                      OK
+                    </Button>
+                    <Button size="sm" variant="ghost" className="rounded-xl" onClick={() => setEditId(null)}>
+                      Отмена
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="truncate font-medium">{u.full_name || "Без имени"}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {u.region} {u.city} · {u.credits} кредитов
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <button
+                  type="button"
+                  aria-label="Изменить имя"
+                  onClick={() => {
+                    setEditId(u.id);
+                    setEditName(u.full_name || "");
+                  }}
+                  className="rounded-full bg-secondary p-2 text-muted-foreground"
+                >
+                  <Pencil className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Удалить пользователя"
+                  onClick={() => setDeleteId(u.id)}
+                  className="rounded-full bg-secondary p-2 text-destructive"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
             </div>
+
+            {deleteId === u.id && (
+              <div className="space-y-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-3">
+                <p className="text-xs text-destructive">
+                  Удалить пользователя навсегда? Профиль и почта освободятся, восстановить нельзя.
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" className="rounded-xl" onClick={() => setDeleteId(null)}>
+                    Отмена
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="rounded-xl"
+                    disabled={busyUser !== null}
+                    onClick={() => removeUser(u.id)}
+                  >
+                    {busyUser === u.id ? "..." : "Удалить"}
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="flex flex-wrap gap-1.5">
               {ROLES.map((role) => {
                 const active = userRoles.includes(role);
