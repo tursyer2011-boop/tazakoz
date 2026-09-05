@@ -31,7 +31,7 @@ function RatingPage() {
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["rating"],
     queryFn: async () => {
-      return (await fetchLeaderboard({ data: { limit: 100 } })) as Row[];
+      return (await fetchLeaderboard({ data: { limit: 500 } })) as Row[];
     },
   });
 

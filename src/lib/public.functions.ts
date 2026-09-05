@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const UsernameInput = z.object({ username: z.string().trim().min(1).max(24) });
-const LimitInput = z.object({ limit: z.number().int().min(1).max(100).optional() });
+const LimitInput = z.object({ limit: z.number().int().min(1).max(500).optional() });
 
 const USERNAME_RE = /^[a-zA-Z0-9_.]{3,24}$/;
 
@@ -29,7 +29,7 @@ export const getLeaderboard = createServerFn({ method: "POST" })
         .from("profiles")
         .select("id, full_name, city, total_credits, approved_count")
         .order("total_credits", { ascending: false })
-        .limit(limit + 50),
+        .limit(limit + 100),
     ]);
 
     const excluded = new Set((staff ?? []).map((r) => r.user_id));
