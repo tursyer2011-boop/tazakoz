@@ -1,11 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Camera, ClipboardCheck, Droplets, HardHat, Home, MessagesSquare, ShieldCheck, Trophy, User } from "lucide-react";
+import { Camera, ClipboardCheck, Droplets, HardHat, Home, MessagesSquare, ShieldCheck, ShoppingBag, Trophy, User } from "lucide-react";
 import { hasRole, useProfile } from "@/hooks/useProfile";
 
 const baseItems = [
   { to: "/map", label: "Главная", icon: Home },
   { to: "/rating", label: "Рейтинг", icon: Trophy },
   { to: "/report", label: "Жалоба", icon: Camera, center: true },
+  { to: "/market", label: "Маркет", icon: ShoppingBag },
   { to: "/chat", label: "Чат", icon: MessagesSquare },
   { to: "/profile", label: "Профиль", icon: User },
 ] as const;
@@ -14,6 +15,7 @@ const staffItems = [
   { to: "/map", label: "Главная", icon: Home },
   { to: "/admin-panel", label: "Панель", icon: ShieldCheck },
   { to: "/report", label: "Жалоба", icon: Camera, center: true },
+  { to: "/market", label: "Маркет", icon: ShoppingBag },
   { to: "/water", label: "Вода", icon: Droplets },
   { to: "/profile", label: "Профиль", icon: User },
 ] as const;
@@ -22,6 +24,7 @@ const workerItems = [
   { to: "/map", label: "Главная", icon: Home },
   { to: "/worker", label: "Задания", icon: HardHat },
   { to: "/worker", label: "Отчёт", icon: ClipboardCheck, center: true },
+  { to: "/market", label: "Маркет", icon: ShoppingBag },
   { to: "/chat", label: "Чат", icon: MessagesSquare },
   { to: "/profile", label: "Профиль", icon: User },
 ] as const;
@@ -38,7 +41,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-[1000] border-t border-border bg-card/95 backdrop-blur">
-      <ul className="mx-auto flex max-w-lg items-end justify-between px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <ul className="mx-auto flex max-w-lg items-end justify-between gap-1 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {items.map(({ to, label, icon: Icon, ...rest }) => {
           const active = pathname === to;
           const center = "center" in rest && rest.center;
@@ -58,7 +61,7 @@ export function BottomNav() {
             <li key={label}>
               <Link
                 to={to}
-                className={`flex w-14 flex-col items-center gap-1 py-1 ${active ? "text-primary" : "text-muted-foreground"}`}
+                className={`flex w-12 flex-col items-center gap-1 py-1 ${active ? "text-primary" : "text-muted-foreground"}`}
               >
                 <Icon className="size-6" strokeWidth={1.6} />
                 <span className="text-[0.6rem]">{label}</span>
