@@ -545,10 +545,47 @@ function UsersAdmin() {
   const load = useServerFn(getAdminOverview);
   const changeRole = useServerFn(setUserRole);
   const changeCredits = useServerFn(adjustCredits);
+  const rename = useServerFn(renameAppUser);
+  const remove = useServerFn(deleteAppUser);
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [pendingCredits, setPendingCredits] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [busyUser, setBusyUser] = useState<string | null>(null);
 
   const overview = useQuery({ queryKey: ["admin-overview"], queryFn: () => load({ data: undefined }) });
+
+  async function saveName(userId: string) {
+    if (editName.trim().length < 2) return;
+    setBusyUser(userId);
+    try {
+      await rename({ data: { userId, fullName: editName.trim() } });
+      setEditId(null);
+      await queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      await queryClient.invalidateQueries({ queryKey: ["app-users"] });
+      toast.success("Имя обновлено");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Ошибка");
+    } finally {
+      setBusyUser(null);
+    }
+  }
+
+  async function removeUser(userId: string) {
+    setBusyUser(userId);
+    try {
+      await remove({ data: { userId } });
+      setDeleteId(null);
+      await queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      await queryClient.invalidateQueries({ queryKey: ["app-users"] });
+      toast.success("Пользователь удалён");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Ошибка");
+    } finally {
+      setBusyUser(null);
+    }
+  }
 
   if (overview.isLoading) return <LoaderCircle className="mx-auto size-5 animate-spin text-primary" />;
   if (overview.error)
