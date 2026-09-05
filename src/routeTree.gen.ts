@@ -16,6 +16,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthenticatedAdminPanelRouteImport } from './routes/_authenticated/admin-panel'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
+import { Route as AuthenticatedMarketRouteImport } from './routes/_authenticated/market'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRatingRouteImport } from './routes/_authenticated/rating'
 import { Route as AuthenticatedReportRouteImport } from './routes/_authenticated/report'
@@ -57,6 +58,11 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
 const AuthenticatedMapRoute = AuthenticatedMapRouteImport.update({
   id: '/map',
   path: '/map',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMarketRoute = AuthenticatedMarketRouteImport.update({
+  id: '/market',
+  path: '/market',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/admin-panel': typeof AuthenticatedAdminPanelRoute
   '/chat': typeof AuthenticatedChatRoute
   '/map': typeof AuthenticatedMapRoute
+  '/market': typeof AuthenticatedMarketRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/rating': typeof AuthenticatedRatingRoute
   '/report': typeof AuthenticatedReportRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/admin-panel': typeof AuthenticatedAdminPanelRoute
   '/chat': typeof AuthenticatedChatRoute
   '/map': typeof AuthenticatedMapRoute
+  '/market': typeof AuthenticatedMarketRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/rating': typeof AuthenticatedRatingRoute
   '/report': typeof AuthenticatedReportRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/_authenticated/admin-panel': typeof AuthenticatedAdminPanelRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/map': typeof AuthenticatedMapRoute
+  '/_authenticated/market': typeof AuthenticatedMarketRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/rating': typeof AuthenticatedRatingRoute
   '/_authenticated/report': typeof AuthenticatedReportRoute
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/admin-panel'
     | '/chat'
     | '/map'
+    | '/market'
     | '/profile'
     | '/rating'
     | '/report'
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/admin-panel'
     | '/chat'
     | '/map'
+    | '/market'
     | '/profile'
     | '/rating'
     | '/report'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin-panel'
     | '/_authenticated/chat'
     | '/_authenticated/map'
+    | '/_authenticated/market'
     | '/_authenticated/profile'
     | '/_authenticated/rating'
     | '/_authenticated/report'
@@ -264,6 +276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMapRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/market': {
+      id: '/_authenticated/market'
+      path: '/market'
+      fullPath: '/market'
+      preLoaderRoute: typeof AuthenticatedMarketRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -327,6 +346,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminPanelRoute: typeof AuthenticatedAdminPanelRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedMapRoute: typeof AuthenticatedMapRoute
+  AuthenticatedMarketRoute: typeof AuthenticatedMarketRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRatingRoute: typeof AuthenticatedRatingRoute
   AuthenticatedReportRoute: typeof AuthenticatedReportRoute
@@ -338,6 +358,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminPanelRoute: AuthenticatedAdminPanelRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedMapRoute: AuthenticatedMapRoute,
+  AuthenticatedMarketRoute: AuthenticatedMarketRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRatingRoute: AuthenticatedRatingRoute,
   AuthenticatedReportRoute: AuthenticatedReportRoute,
