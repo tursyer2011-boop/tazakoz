@@ -172,6 +172,22 @@ function ProfilePage() {
             <ShieldCheck className="size-5 text-primary" strokeWidth={1.6} /> Админ-панель
           </Link>
         )}
+        {isStaff && (
+          <Link
+            to="/market"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm font-medium"
+          >
+            <ShoppingBag className="size-5 text-primary" strokeWidth={1.6} /> Добавить товар
+          </Link>
+        )}
+        {!isStaff && (
+          <Link
+            to="/water"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm font-medium"
+          >
+            <Thermometer className="size-5 text-primary" strokeWidth={1.6} /> Температура
+          </Link>
+        )}
       </div>
 
       <CashoutCard
