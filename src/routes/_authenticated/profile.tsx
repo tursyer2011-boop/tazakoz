@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { HardHat, Heart, LogOut, MapPin, MessagesSquare, ShieldCheck, Wallet } from "lucide-react";
+import { HardHat, Heart, LogOut, MapPin, MessagesSquare, ShieldCheck, ShoppingBag, Thermometer, Wallet } from "lucide-react";
 import { getMyTeam } from "@/lib/ops.functions";
 import { KZT_PER_CREDIT, MIN_PAYOUT_CREDITS, MIN_DONATION_CREDITS } from "@/lib/credits";
 import { requestPayout, donateCredits } from "@/lib/payouts.functions";
