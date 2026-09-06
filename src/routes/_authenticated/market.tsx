@@ -99,11 +99,16 @@ function ProductCard({ product, isAdmin }: { product: Product; isAdmin: boolean 
         {product.description ? (
           <p className="whitespace-pre-line text-sm text-muted-foreground">{product.description}</p>
         ) : null}
-        <Button
-          className="w-full rounded-xl"
-          onClick={() => toast.info("Оплата скоро будет доступна", { description: "Заказ пока оформить нельзя." })}
-        >
-          Заказать
+        <Button className="w-full rounded-xl" asChild>
+          <a
+            href={`https://wa.me/77764694462?text=${encodeURIComponent(
+              "Здравствуйте! Я бы хотел приобрести этот товар от TazaKoz и быть экологически чистым.",
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Заказать
+          </a>
         </Button>
       </div>
 

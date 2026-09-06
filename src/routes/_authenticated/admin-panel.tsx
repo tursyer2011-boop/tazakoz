@@ -6,7 +6,7 @@ import { LoaderCircle, ShieldCheck, Users, Trash2, Coins, ClipboardList, MailChe
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole, type AppRole } from "@/hooks/useProfile";
-import { adjustCredits, getAdminOverview, getEmailDiagnostics, inviteAdmin, listAdminInvites, listAppUsers, listWorkerApplications, hideWorkerApplication, setUserRole, renameAppUser, deleteAppUser } from "@/lib/admin.functions";
+import { adjustCredits, getAdminOverview, getEmailDiagnostics, inviteAdmin, listAdminInvites, listAppUsers, listWorkerApplications, hideWorkerApplication, setUserRole, renameAppUser, deleteAppUser, setUserCredits } from "@/lib/admin.functions";
 import { reviewApplication } from "@/lib/worker.functions";
 import { getAdminScope, getTeamActivity, grantTeamCredits } from "@/lib/ops.functions";
 import { OpsMap } from "@/components/OpsMap";
@@ -736,22 +736,57 @@ function UsersAdmin() {
                 );
               })}
             </div>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                value={amounts[u.id] ?? ""}
-                onChange={(e) => setAmounts((a) => ({ ...a, [u.id]: e.target.value }))}
-                placeholder="± кредиты"
-                className="h-10 rounded-xl"
-              />
-              <Button
-                size="sm"
-                className="rounded-xl"
-                disabled={pendingCredits !== null}
-                onClick={() => applyCredits(u.id)}
-              >
-                {pendingCredits === u.id ? "..." : "Применить"}
-              </Button>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  value={amounts[u.id] ?? String(u.credits)}
+                  onChange={(e) => setAmounts((a) => ({ ...a, [u.id]: e.target.value }))}
+                  placeholder="Баланс кредитов"
+                  className="h-10 rounded-xl"
+                />
+                <Button
+                  size="sm"
+                  className="rounded-xl"
+                  disabled={pendingCredits !== null}
+                  onClick={() => saveCredits(u.id)}
+                >
+                  {pendingCredits === u.id ? "..." : "Сохранить"}
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  value={amounts[`adj:${u.id}`] ?? ""}
+                  onChange={(e) => setAmounts((a) => ({ ...a, [`adj:${u.id}`]: e.target.value }))}
+                  placeholder="± добавить/списать"
+                  className="h-10 rounded-xl"
+                />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="rounded-xl"
+                  disabled={pendingCredits !== null}
+                  onClick={async () => {
+                    const key = `adj:${u.id}`;
+                    const amount = Number(amounts[key] ?? 0);
+                    if (!Number.isFinite(amount) || amount === 0 || pendingCredits) return;
+                    setPendingCredits(u.id);
+                    try {
+                      await changeCredits({ data: { userId: u.id, amount, note: "Ручная корректировка" } });
+                      setAmounts((a) => ({ ...a, [key]: "" }));
+                      await queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+                      toast.success("Кредиты обновлены");
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Ошибка");
+                    } finally {
+                      setPendingCredits(null);
+                    }
+                  }}
+                >
+                  {pendingCredits === u.id ? "..." : "Применить"}
+                </Button>
+              </div>
             </div>
           </article>
         );
