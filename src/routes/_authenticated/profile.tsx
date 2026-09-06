@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { HardHat, Heart, LogOut, MapPin, MessagesSquare, ShieldCheck, Wallet } from "lucide-react";
+import { HardHat, Heart, LogOut, MapPin, MessagesSquare, ShieldCheck, ShoppingBag, Thermometer, Wallet } from "lucide-react";
 import { getMyTeam } from "@/lib/ops.functions";
 import { KZT_PER_CREDIT, MIN_PAYOUT_CREDITS, MIN_DONATION_CREDITS } from "@/lib/credits";
 import { requestPayout, donateCredits } from "@/lib/payouts.functions";
@@ -170,6 +170,22 @@ function ProfilePage() {
             className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm font-medium"
           >
             <ShieldCheck className="size-5 text-primary" strokeWidth={1.6} /> Админ-панель
+          </Link>
+        )}
+        {isStaff && (
+          <Link
+            to="/market"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm font-medium"
+          >
+            <ShoppingBag className="size-5 text-primary" strokeWidth={1.6} /> Добавить товар
+          </Link>
+        )}
+        {!isStaff && (
+          <Link
+            to="/water"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm font-medium"
+          >
+            <Thermometer className="size-5 text-primary" strokeWidth={1.6} /> Температура
           </Link>
         )}
       </div>

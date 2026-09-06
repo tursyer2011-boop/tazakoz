@@ -14,7 +14,6 @@ const staffItems = [
   { to: "/map", label: "Главная", icon: Home },
   { to: "/admin-panel", label: "Панель", icon: ShieldCheck },
   { to: "/report", label: "Жалоба", icon: Camera, center: true },
-  { to: "/market", label: "Маркет", icon: ShoppingBag },
   { to: "/water", label: "Вода", icon: Droplets },
   { to: "/profile", label: "Профиль", icon: User },
 ] as const;
