@@ -545,6 +545,7 @@ function UsersAdmin() {
   const load = useServerFn(getAdminOverview);
   const changeRole = useServerFn(setUserRole);
   const changeCredits = useServerFn(adjustCredits);
+  const setCredits = useServerFn(setUserCredits);
   const rename = useServerFn(renameAppUser);
   const remove = useServerFn(deleteAppUser);
   const [amounts, setAmounts] = useState<Record<string, string>>({});
