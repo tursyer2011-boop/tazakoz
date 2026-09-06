@@ -620,6 +620,26 @@ function UsersAdmin() {
     }
   }
 
+  async function saveCredits(userId: string) {
+    if (pendingCredits) return;
+    const amount = Number(amounts[userId] ?? "");
+    if (!Number.isInteger(amount) || amount < 0) {
+      toast.error("Введите целое число 0 или больше");
+      return;
+    }
+    setPendingCredits(userId);
+    try {
+      await setCredits({ data: { userId, amount } });
+      setAmounts((a) => ({ ...a, [userId]: "" }));
+      await queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      toast.success("Баланс установлен");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Ошибка");
+    } finally {
+      setPendingCredits(null);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
