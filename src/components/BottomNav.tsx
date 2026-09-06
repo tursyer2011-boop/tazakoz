@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Camera, ClipboardCheck, Droplets, HardHat, Home, MessagesSquare, ShieldCheck, ShoppingBag, Trophy, User } from "lucide-react";
+import { Camera, ClipboardCheck, Droplets, HardHat, Home, ShieldCheck, ShoppingBag, Trophy, User } from "lucide-react";
 import { hasRole, useProfile } from "@/hooks/useProfile";
 
 const baseItems = [
@@ -7,7 +7,6 @@ const baseItems = [
   { to: "/rating", label: "Рейтинг", icon: Trophy },
   { to: "/report", label: "Жалоба", icon: Camera, center: true },
   { to: "/market", label: "Маркет", icon: ShoppingBag },
-  { to: "/chat", label: "Чат", icon: MessagesSquare },
   { to: "/profile", label: "Профиль", icon: User },
 ] as const;
 
@@ -25,7 +24,6 @@ const workerItems = [
   { to: "/worker", label: "Задания", icon: HardHat },
   { to: "/worker", label: "Отчёт", icon: ClipboardCheck, center: true },
   { to: "/market", label: "Маркет", icon: ShoppingBag },
-  { to: "/chat", label: "Чат", icon: MessagesSquare },
   { to: "/profile", label: "Профиль", icon: User },
 ] as const;
 
