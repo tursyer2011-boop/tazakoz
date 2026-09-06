@@ -160,6 +160,34 @@ export const adjustCredits = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Установка точного баланса кредитов пользователя. */
+export const setUserCredits = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ userId: z.string().uuid(), amount: z.number().int().min(0).max(1_000_000) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("credits")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (!profile) throw new Error("Пользователь не найден");
+    const diff = data.amount - profile.credits;
+    if (diff === 0) return { ok: true, unchanged: true };
+    await supabaseAdmin.from("profiles").update({ credits: data.amount }).eq("id", data.userId);
+    await supabaseAdmin.from("credit_transactions").insert({
+      user_id: data.userId,
+      amount: diff,
+      kind: "admin_adjust",
+      note: "Установка баланса администратором",
+      created_by: context.userId,
+    });
+    return { ok: true };
+  });
+
 const RegistryInput = z.object({
   kind: z.enum(["all", "resident", "worker"]).default("all"),
   search: z.string().trim().max(120).default(""),

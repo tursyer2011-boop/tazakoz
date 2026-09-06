@@ -7,7 +7,6 @@ const baseItems = [
   { to: "/rating", label: "Рейтинг", icon: Trophy },
   { to: "/report", label: "Жалоба", icon: Camera, center: true },
   { to: "/market", label: "Маркет", icon: ShoppingBag },
-  { to: "/chat", label: "Чат", icon: MessagesSquare },
   { to: "/profile", label: "Профиль", icon: User },
 ] as const;
 
