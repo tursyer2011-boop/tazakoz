@@ -181,6 +181,19 @@ function AdminGate() {
               <ShieldCheck className="size-5" />
               <span className="text-sm font-semibold tracking-wide uppercase">Данные администратора</span>
             </div>
+            {bootstrapOpen === true && (
+              <div className="space-y-2">
+                <Label htmlFor="admin-password">Пароль доступа</Label>
+                <Input
+                  id="admin-password"
+                  type="password"
+                  autoComplete="off"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Пароль доступа"
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="admin-email">Почта</Label>
               <Input
