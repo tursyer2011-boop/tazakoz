@@ -752,7 +752,7 @@ function UsersAdmin() {
                   size="sm"
                   className="rounded-xl"
                   disabled={pendingCredits !== null}
-                  onClick={() => saveCredits(u.id)}
+                  onClick={() => saveCredits(u.id, u.credits)}
                 >
                   {pendingCredits === u.id ? "..." : "Сохранить"}
                 </Button>
