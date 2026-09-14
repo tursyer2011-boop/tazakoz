@@ -1,27 +1,18 @@
 export type Region = { name: string; lat: number; lng: number };
 
+/** Только Мангистауская область. */
 export const REGIONS: Region[] = [
-  { name: "Астана", lat: 51.1605, lng: 71.4704 },
-  { name: "Алматы", lat: 43.2389, lng: 76.8897 },
-  { name: "Шымкент", lat: 42.3417, lng: 69.5901 },
-  { name: "Атырау", lat: 47.0945, lng: 51.9238 },
   { name: "Ақтау", lat: 43.6512, lng: 51.1575 },
-  { name: "Ақтөбе", lat: 50.2839, lng: 57.167 },
-  { name: "Қарағанды", lat: 49.8047, lng: 73.1094 },
-  { name: "Түркістан", lat: 43.2973, lng: 68.2517 },
-  { name: "Орал", lat: 51.2333, lng: 51.3667 },
-  { name: "Павлодар", lat: 52.2871, lng: 76.9674 },
-  { name: "Өскемен", lat: 49.9787, lng: 82.6014 },
-  { name: "Семей", lat: 50.4111, lng: 80.2275 },
-  { name: "Тараз", lat: 42.9, lng: 71.3667 },
-  { name: "Қызылорда", lat: 44.8479, lng: 65.4823 },
-  { name: "Қостанай", lat: 53.2144, lng: 63.6246 },
-  { name: "Петропавл", lat: 54.8667, lng: 69.15 },
-  { name: "Көкшетау", lat: 53.2833, lng: 69.4 },
-  { name: "Талдықорған", lat: 45.0156, lng: 78.3739 },
+  { name: "Жаңаөзен", lat: 43.3411, lng: 52.8619 },
+  { name: "Жетібай", lat: 43.5928, lng: 52.0656 },
+  { name: "Құрық", lat: 43.1978, lng: 51.6486 },
+  { name: "Шетпе", lat: 44.1667, lng: 52.1167 },
+  { name: "Бейнеу", lat: 45.3167, lng: 55.2 },
+  { name: "Форт-Шевченко", lat: 44.5089, lng: 50.2647 },
+  { name: "Мұнайлы", lat: 43.7361, lng: 51.2222 },
 ];
 
-export const KZ_CENTER = { lat: 48.0196, lng: 66.9237 };
+export const KZ_CENTER = { lat: 43.8, lng: 52.0 };
 
 export const SEVERITY = {
   low: { label: "Слабое", color: "var(--severity-low)" },

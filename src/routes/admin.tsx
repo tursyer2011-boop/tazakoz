@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, KeyRound, LoaderCircle, Lock, MailCheck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { activateAdminAccess, getAdminGateStatus, requestAdminAccess } from "@/lib/admin-access.functions";
+import { activateAdminAccess, claimFirstAdmin, getAdminGateStatus, requestAdminAccess } from "@/lib/admin-access.functions";
 import { loadRegions, loadSettlements, searchSettlements, type KzRegion, type Settlement } from "@/lib/geo";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,9 @@ function AdminGate() {
   const activate = useServerFn(activateAdminAccess);
 
   const gateStatus = useServerFn(getAdminGateStatus);
+  const claimAdmin = useServerFn(claimFirstAdmin);
   const [bootstrapOpen, setBootstrapOpen] = useState<boolean | null>(null);
+  const [sessionEmail, setSessionEmail] = useState("");
   const [step, setStep] = useState<Step>("password");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
@@ -53,8 +55,26 @@ function AdminGate() {
         if (!s.bootstrapOpen) setStep("details");
       })
       .catch(() => setBootstrapOpen(false));
+    void supabase.auth.getSession().then(({ data }) => {
+      setSessionEmail(data.session?.user.email ?? "");
+      setEmail((e) => e || (data.session?.user.email ?? ""));
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function claim() {
+    setBusy(true);
+    try {
+      await claimAdmin({ data: undefined });
+      setStep("done");
+      setTimeout(() => void navigate({ to: "/admin-panel" }), 1800);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Ошибка");
+    } finally {
+      setBusy(false);
+    }
+  }
+
 
   useEffect(() => {
     void loadRegions().then(setRegions).catch(() => toast.error("Не удалось загрузить регионы"));
@@ -130,25 +150,28 @@ function AdminGate() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-primary">
               <KeyRound className="size-5" />
-              <span className="text-sm font-semibold tracking-wide uppercase">Пароль доступа</span>
+              <span className="text-sm font-semibold tracking-wide uppercase">Первый администратор</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Введите служебный пароль администратора — тот же, что используется в Telegram-боте.
+              Вы вошли как {sessionEmail || "гость"}. Нажмите кнопку — вы станете постоянным администратором,
+              остальные админы будут сняты, а эта страница закроется навсегда.
             </p>
-            <Input
-              type="password"
-              value={password}
-              autoComplete="off"
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Пароль доступа"
-            />
-            <Button
-              className="w-full"
-              disabled={password.trim().length < 3}
+            {sessionEmail ? (
+              <Button className="w-full" disabled={busy} onClick={claim}>
+                {busy ? <LoaderCircle className="size-4 animate-spin" /> : "Стать админом"}
+              </Button>
+            ) : (
+              <Button className="w-full" onClick={() => void navigate({ to: "/auth" })}>
+                Сначала войдите в аккаунт
+              </Button>
+            )}
+            <button
+              type="button"
               onClick={() => setStep("details")}
+              className="w-full text-center text-xs text-muted-foreground underline"
             >
-              Продолжить
-            </Button>
+              Вход по паролю и коду с почты
+            </button>
           </div>
         )}
 
@@ -158,6 +181,19 @@ function AdminGate() {
               <ShieldCheck className="size-5" />
               <span className="text-sm font-semibold tracking-wide uppercase">Данные администратора</span>
             </div>
+            {bootstrapOpen === true && (
+              <div className="space-y-2">
+                <Label htmlFor="admin-password">Пароль доступа</Label>
+                <Input
+                  id="admin-password"
+                  type="password"
+                  autoComplete="off"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Пароль доступа"
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="admin-email">Почта</Label>
               <Input

@@ -141,13 +141,14 @@ export const adjustCredits = createServerFn({ method: "POST" })
     // Начисление строго 1:1: пользователь получает ровно введённую сумму.
     const applied = data.amount;
 
-    await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from("profiles")
       .update({
-        credits: profile.credits + applied,
+        credits: Math.max(0, profile.credits + applied),
         total_credits: Math.max(0, profile.total_credits + Math.max(0, applied)),
       })
       .eq("id", data.userId);
+    if (updateError) throw new Error(updateError.message);
 
     await supabaseAdmin.from("credit_transactions").insert({
       user_id: data.userId,
@@ -176,16 +177,23 @@ export const setUserCredits = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!profile) throw new Error("Пользователь не найден");
     const diff = data.amount - profile.credits;
-    if (diff === 0) return { ok: true, unchanged: true };
-    await supabaseAdmin.from("profiles").update({ credits: data.amount }).eq("id", data.userId);
-    await supabaseAdmin.from("credit_transactions").insert({
-      user_id: data.userId,
-      amount: diff,
-      kind: "admin_adjust",
-      note: "Установка баланса администратором",
-      created_by: context.userId,
-    });
-    return { ok: true };
+    const { data: updated, error } = await supabaseAdmin
+      .from("profiles")
+      .update({ credits: data.amount })
+      .eq("id", data.userId)
+      .select("credits")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (diff !== 0) {
+      await supabaseAdmin.from("credit_transactions").insert({
+        user_id: data.userId,
+        amount: diff,
+        kind: "admin_adjust",
+        note: "Установка баланса администратором",
+        created_by: context.userId,
+      });
+    }
+    return { ok: true, credits: updated?.credits ?? data.amount };
   });
 
 const RegistryInput = z.object({

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const RequestInput = z.object({
   password: z.string().max(100).default(""),
@@ -202,4 +203,44 @@ export const activateAdminAccess = createServerFn({ method: "POST" })
       expiresAt,
       otp: link.properties?.email_otp ?? "",
     };
+  });
+
+/**
+ * Одноразовый захват прав владельца: текущий вошедший пользователь становится
+ * постоянным администратором, все прочие админы лишаются роли, страница /admin
+ * закрывается навсегда.
+ */
+export const claimFirstAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (!(await bootstrapOpen(supabaseAdmin))) {
+      throw new Error("Первичная регистрация владельца уже закрыта");
+    }
+
+    // снять админку со всех остальных
+    await supabaseAdmin.from("user_roles").delete().eq("role", "admin").neq("user_id", context.userId);
+    await supabaseAdmin
+      .from("profiles")
+      .update({ admin_permanent: false, admin_expires_at: null, admin_activated_at: null })
+      .neq("id", context.userId);
+
+    await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: context.userId, role: "admin" }, { onConflict: "user_id,role" });
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        admin_permanent: true,
+        admin_expires_at: null,
+        admin_activated_at: new Date().toISOString(),
+      })
+      .eq("id", context.userId);
+
+    await supabaseAdmin
+      .from("admin_bootstrap")
+      .update({ used_at: new Date().toISOString(), used_by: context.userId, updated_at: new Date().toISOString() })
+      .eq("id", true);
+
+    return { ok: true };
   });

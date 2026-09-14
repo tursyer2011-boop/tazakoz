@@ -621,19 +621,22 @@ function UsersAdmin() {
     }
   }
 
-  async function saveCredits(userId: string) {
+  async function saveCredits(userId: string, current: number) {
     if (pendingCredits) return;
-    const amount = Number(amounts[userId] ?? "");
+    const raw = amounts[userId];
+    const amount = raw === undefined || raw === "" ? current : Number(raw);
     if (!Number.isInteger(amount) || amount < 0) {
       toast.error("Введите целое число 0 или больше");
       return;
     }
     setPendingCredits(userId);
     try {
-      await setCredits({ data: { userId, amount } });
+      const res = await setCredits({ data: { userId, amount } });
       setAmounts((a) => ({ ...a, [userId]: "" }));
       await queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
-      toast.success("Баланс установлен");
+      await queryClient.invalidateQueries({ queryKey: ["app-users"] });
+      await overview.refetch();
+      toast.success(`Баланс: ${res.credits} кредитов`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Ошибка");
     } finally {
@@ -749,7 +752,7 @@ function UsersAdmin() {
                   size="sm"
                   className="rounded-xl"
                   disabled={pendingCredits !== null}
-                  onClick={() => saveCredits(u.id)}
+                  onClick={() => saveCredits(u.id, u.credits)}
                 >
                   {pendingCredits === u.id ? "..." : "Сохранить"}
                 </Button>
