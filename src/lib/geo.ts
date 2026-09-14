@@ -13,11 +13,15 @@ export type Settlement = {
 let regionsCache: KzRegion[] | null = null;
 const settlementCache = new Map<string, Settlement[]>();
 
+/** Платформа работает только в Мангистауской области. */
+export const ALLOWED_REGION_CODES = ["09"];
+
 export async function loadRegions(): Promise<KzRegion[]> {
   if (regionsCache) return regionsCache;
   const res = await fetch("/geo/regions.json");
   if (!res.ok) throw new Error("Не удалось загрузить список регионов");
-  regionsCache = (await res.json()) as KzRegion[];
+  const all = (await res.json()) as KzRegion[];
+  regionsCache = all.filter((r) => ALLOWED_REGION_CODES.includes(r.code));
   return regionsCache;
 }
 
