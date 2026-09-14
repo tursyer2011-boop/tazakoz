@@ -141,13 +141,14 @@ export const adjustCredits = createServerFn({ method: "POST" })
     // Начисление строго 1:1: пользователь получает ровно введённую сумму.
     const applied = data.amount;
 
-    await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from("profiles")
       .update({
-        credits: profile.credits + applied,
+        credits: Math.max(0, profile.credits + applied),
         total_credits: Math.max(0, profile.total_credits + Math.max(0, applied)),
       })
       .eq("id", data.userId);
+    if (updateError) throw new Error(updateError.message);
 
     await supabaseAdmin.from("credit_transactions").insert({
       user_id: data.userId,
