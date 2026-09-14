@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, KeyRound, LoaderCircle, Lock, MailCheck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { activateAdminAccess, getAdminGateStatus, requestAdminAccess } from "@/lib/admin-access.functions";
+import { activateAdminAccess, claimFirstAdmin, getAdminGateStatus, requestAdminAccess } from "@/lib/admin-access.functions";
 import { loadRegions, loadSettlements, searchSettlements, type KzRegion, type Settlement } from "@/lib/geo";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
