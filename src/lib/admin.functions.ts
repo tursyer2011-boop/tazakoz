@@ -176,16 +176,23 @@ export const setUserCredits = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!profile) throw new Error("Пользователь не найден");
     const diff = data.amount - profile.credits;
-    if (diff === 0) return { ok: true, unchanged: true };
-    await supabaseAdmin.from("profiles").update({ credits: data.amount }).eq("id", data.userId);
-    await supabaseAdmin.from("credit_transactions").insert({
-      user_id: data.userId,
-      amount: diff,
-      kind: "admin_adjust",
-      note: "Установка баланса администратором",
-      created_by: context.userId,
-    });
-    return { ok: true };
+    const { data: updated, error } = await supabaseAdmin
+      .from("profiles")
+      .update({ credits: data.amount })
+      .eq("id", data.userId)
+      .select("credits")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (diff !== 0) {
+      await supabaseAdmin.from("credit_transactions").insert({
+        user_id: data.userId,
+        amount: diff,
+        kind: "admin_adjust",
+        note: "Установка баланса администратором",
+        created_by: context.userId,
+      });
+    }
+    return { ok: true, credits: updated?.credits ?? data.amount };
   });
 
 const RegistryInput = z.object({

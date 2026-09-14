@@ -12,7 +12,7 @@ export const REGIONS: Region[] = [
   { name: "Мұнайлы", lat: 43.7361, lng: 51.2222 },
 ];
 
-export const KZ_CENTER = { lat: 48.0196, lng: 66.9237 };
+export const KZ_CENTER = { lat: 43.8, lng: 52.0 };
 
 export const SEVERITY = {
   low: { label: "Слабое", color: "var(--severity-low)" },
