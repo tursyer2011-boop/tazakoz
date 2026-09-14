@@ -34,7 +34,9 @@ function AdminGate() {
   const activate = useServerFn(activateAdminAccess);
 
   const gateStatus = useServerFn(getAdminGateStatus);
+  const claimAdmin = useServerFn(claimFirstAdmin);
   const [bootstrapOpen, setBootstrapOpen] = useState<boolean | null>(null);
+  const [sessionEmail, setSessionEmail] = useState("");
   const [step, setStep] = useState<Step>("password");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
@@ -53,8 +55,26 @@ function AdminGate() {
         if (!s.bootstrapOpen) setStep("details");
       })
       .catch(() => setBootstrapOpen(false));
+    void supabase.auth.getSession().then(({ data }) => {
+      setSessionEmail(data.session?.user.email ?? "");
+      setEmail((e) => e || (data.session?.user.email ?? ""));
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function claim() {
+    setBusy(true);
+    try {
+      await claimAdmin({ data: undefined });
+      setStep("done");
+      setTimeout(() => void navigate({ to: "/admin-panel" }), 1800);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Ошибка");
+    } finally {
+      setBusy(false);
+    }
+  }
+
 
   useEffect(() => {
     void loadRegions().then(setRegions).catch(() => toast.error("Не удалось загрузить регионы"));
