@@ -43,6 +43,13 @@ function WaterPage() {
     },
   });
 
+  const bodies = waterBodiesFor(city);
+  const { data: temps = [], isLoading: waterLoading } = useQuery({
+    queryKey: ["water-temps", city],
+    queryFn: () => fetchWaterTemperatures(bodies),
+    enabled: bodies.length > 0,
+  });
+
   const { data: recent = [] } = useQuery({
     queryKey: ["recent-reports", city],
     queryFn: async () => {
