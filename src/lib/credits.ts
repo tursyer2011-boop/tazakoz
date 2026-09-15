@@ -1,4 +1,4 @@
-export const REPORT_CREDITS: Record<string, number> = { low: 10, medium: 25, high: 50 };
+export const REPORT_CREDITS: Record<string, number> = { low: 5, medium: 10, high: 15 };
 export const WORKER_REWARD: Record<string, number> = { low: 20, medium: 50, high: 100 };
 
 export const CREDIT_KIND_LABELS: Record<string, string> = {
