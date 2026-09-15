@@ -91,7 +91,7 @@ export async function analyzeCleanup(beforeImage: string, afterImage: string): P
 export async function reverseGeocode(lat: number, lng: number): Promise<{ address: string; water: string }> {
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ru&zoom=16`,
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ru&zoom=18&addressdetails=1`,
       { headers: { "User-Agent": "TazaKoz/1.0 (https://tazakoz.online)" } },
     );
     if (!res.ok) return { address: "", water: "" };
@@ -100,8 +100,19 @@ export async function reverseGeocode(lat: number, lng: number): Promise<{ addres
       address?: Record<string, string>;
     };
     const a = data.address ?? {};
+    // Precise street-level line: house, street, microdistrict, city.
+    const street = a["road"] ?? a["pedestrian"] ?? a["footway"] ?? a["residential"] ?? "";
+    const house = a["house_number"] ?? "";
+    const district = a["neighbourhood"] ?? a["quarter"] ?? a["suburb"] ?? a["city_district"] ?? "";
+    const city = a["city"] ?? a["town"] ?? a["village"] ?? a["municipality"] ?? "";
+    const parts = [
+      street ? (house ? `${street}, ${house}` : street) : "",
+      district,
+      city,
+    ].filter(Boolean);
+    const short = Array.from(new Set(parts)).join(", ");
     return {
-      address: data.display_name ?? "",
+      address: short || data.display_name || "",
       water: a["water"] ?? a["river"] ?? a["lake"] ?? a["bay"] ?? a["reservoir"] ?? "",
     };
   } catch {
