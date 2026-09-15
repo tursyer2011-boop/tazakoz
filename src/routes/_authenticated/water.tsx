@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Droplets, Thermometer, Wind } from "lucide-react";
+import { Droplets, Thermometer, Waves, Wind } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { REGIONS } from "@/lib/regions";
+import { fetchWaterTemperatures, waterBodiesFor } from "@/lib/water-bodies";
 import {
   Select,
   SelectContent,
