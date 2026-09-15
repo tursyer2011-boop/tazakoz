@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Droplets, Thermometer, Wind } from "lucide-react";
+import { Droplets, Thermometer, Waves, Wind } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { REGIONS } from "@/lib/regions";
+import { fetchWaterTemperatures, waterBodiesFor } from "@/lib/water-bodies";
 import {
   Select,
   SelectContent,
@@ -40,6 +41,13 @@ function WaterPage() {
         daily: { time: string[]; temperature_2m_max: number[]; temperature_2m_min: number[] };
       };
     },
+  });
+
+  const bodies = waterBodiesFor(city);
+  const { data: temps = [], isLoading: waterLoading } = useQuery({
+    queryKey: ["water-temps", city],
+    queryFn: () => fetchWaterTemperatures(bodies),
+    enabled: bodies.length > 0,
   });
 
   const { data: recent = [] } = useQuery({
@@ -94,11 +102,35 @@ function WaterPage() {
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-4">
-        <p className="text-xs text-muted-foreground">Температура воды</p>
-        <p className="mt-1 text-2xl font-semibold text-muted-foreground">Скоро</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Данные датчиков водоёмов появятся позже.
+        <p className="mb-1 text-sm font-medium">Температура воды</p>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Водоёмы рядом с городом {city}
         </p>
+        {bodies.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Рядом нет открытых водоёмов.</p>
+        ) : (
+          <ul className="space-y-2.5">
+            {bodies.map((b, i) => (
+              <li key={b.name} className="flex items-center justify-between gap-3">
+                <span className="min-w-0">
+                  <span className="block truncate text-sm">{b.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {b.kind}
+                    {!b.open && " · оценка"}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5 text-lg font-semibold">
+                  <Waves className="size-4 text-primary" />
+                  {waterLoading
+                    ? "…"
+                    : typeof temps[i] === "number"
+                      ? `${Math.round(temps[i]!)}°`
+                      : "—"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {weather && (
