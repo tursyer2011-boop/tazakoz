@@ -41,21 +41,64 @@ function ReportPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lng: number }>(KZ_CENTER);
-  const [hasGeo, setHasGeo] = useState(false);
+  const [geoState, setGeoState] = useState<"pending" | "ok" | "failed">("pending");
+  const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [address, setAddress] = useState<string>("");
+  const [manual, setManual] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
 
-  useEffect(() => {
-    if (!("geolocation" in navigator)) return;
+  const hasGeo = geoState === "ok";
+
+  function locate() {
+    if (!("geolocation" in navigator)) {
+      setGeoState("failed");
+      return;
+    }
+    setGeoState("pending");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setHasGeo(true);
+        setAccuracy(pos.coords.accuracy ?? null);
+        setGeoState("ok");
       },
-      () => setHasGeo(false),
-      { enableHighAccuracy: true, timeout: 8000 },
+      () => setGeoState("failed"),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
+  }
+
+  useEffect(() => {
+    locate();
   }, []);
+
+  // Resolve a human-readable street address for the detected point.
+  useEffect(() => {
+    if (geoState !== "ok" && !manual) return;
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.lat}&lon=${coords.lng}&accept-language=ru&zoom=18&addressdetails=1`,
+          { signal: ctrl.signal },
+        );
+        if (!res.ok) return;
+        const json = (await res.json()) as { display_name?: string; address?: Record<string, string> };
+        const a = json.address ?? {};
+        const street = a["road"] ?? a["pedestrian"] ?? a["residential"] ?? "";
+        const house = a["house_number"] ?? "";
+        const district = a["neighbourhood"] ?? a["quarter"] ?? a["suburb"] ?? a["city_district"] ?? "";
+        const city = a["city"] ?? a["town"] ?? a["village"] ?? "";
+        const parts = [street ? (house ? `${street}, ${house}` : street) : "", district, city].filter(Boolean);
+        setAddress(Array.from(new Set(parts)).join(", ") || json.display_name || "");
+      } catch {
+        /* address preview is optional */
+      }
+    }, 400);
+    return () => {
+      ctrl.abort();
+      clearTimeout(t);
+    };
+  }, [coords.lat, coords.lng, geoState, manual]);
 
   function pick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
