@@ -25,7 +25,7 @@ export const submitReport = createServerFn({ method: "POST" })
 
     const approved = verdict.is_real_photo && verdict.has_pollution;
     const severity = verdict.severity;
-    const credits = approved ? (REPORT_CREDITS[severity] ?? 10) : 0;
+    const credits = approved ? (REPORT_CREDITS[severity] ?? 5) : 0;
     const reason =
       verdict.reason || (approved ? "Загрязнение подтверждено." : "Загрязнение на фото не подтверждено.");
 
