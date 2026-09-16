@@ -334,29 +334,17 @@ function AuthScreen() {
               {mode === "signup" && (
                 <>
                   <div className="grid gap-1.5">
-                    <Label htmlFor="last">Фамилия</Label>
-                    <Input id="last" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-11 rounded-xl" maxLength={60} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="first">Имя</Label>
-                      <Input id="first" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-11 rounded-xl" maxLength={60} />
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="patronymic">Отчество</Label>
-                      <Input id="patronymic" value={patronymic} onChange={(e) => setPatronymic(e.target.value)} className="h-11 rounded-xl" maxLength={60} />
-                    </div>
+                    <Label htmlFor="first">Имя</Label>
+                    <Input id="first" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-11 rounded-xl" maxLength={60} />
                   </div>
                   <div className="grid gap-1.5">
                     <Label>Дата рождения</Label>
                     <WheelDatePicker value={birthDate} onChange={setBirthDate} />
                   </div>
-                  <UsernameField value={username} onChange={setUsername} onStateChange={setUsernameState} />
                   <div className="grid gap-1.5">
                     <Label htmlFor="phone">Телефон</Label>
-                    <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 700 000 00 00" className="h-11 rounded-xl" maxLength={20} />
+                    <Input id="phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 700 000 00 00" className="h-11 rounded-xl" maxLength={20} />
                   </div>
-                  <LocationPicker value={place} onChange={setPlace} />
                 </>
               )}
 
