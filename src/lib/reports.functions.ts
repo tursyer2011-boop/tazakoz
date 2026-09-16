@@ -77,6 +77,7 @@ export const submitReport = createServerFn({ method: "POST" })
       .insert({
         user_id: context.userId,
         photo_url: data.photoPath,
+        photo_hash: photoHash,
         comment: data.comment,
         lat: data.lat,
         lng: data.lng,
