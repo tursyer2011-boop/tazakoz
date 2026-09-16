@@ -123,8 +123,8 @@ function AuthScreen() {
         return;
       }
 
-      if (!lastName.trim() || !firstName.trim()) {
-        toast.error("Укажите фамилию и имя");
+      if (!firstName.trim()) {
+        toast.error("Укажите имя");
         return;
       }
       if (!/^\+?\d{10,15}$/.test(phone.replace(/[\s()-]/g, ""))) {
@@ -135,27 +135,12 @@ function AuthScreen() {
         toast.error("Укажите дату рождения");
         return;
       }
-      if (!place) {
-        toast.error("Выберите регион и населённый пункт");
-        return;
-      }
       if (password.length < 8) {
         toast.error("Пароль должен быть не короче 8 символов");
         return;
       }
-      if (usernameState === "taken") {
-        toast.error("Этот никнейм уже занят. Пожалуйста, выберите другой.");
-        return;
-      }
-      if (usernameState === "invalid") {
-        toast.error("Никнейм: 3–24 символа, латиница, цифры, «_» и «.»");
-        return;
-      }
-      if (!agree) {
-        toast.error("Подтвердите согласие с условиями и обработкой данных");
-        return;
-      }
 
+      const home = REGIONS[0]!;
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -163,17 +148,16 @@ function AuthScreen() {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            patronymic: patronymic.trim(),
-            username: username.trim() || fallbackUsername(),
+            last_name: "",
+            patronymic: "",
+            username: fallbackUsername(),
             phone: phone.trim(),
             birth_date: birthDate,
-            city: place.settlement.name,
-            region: place.regionName,
-            region_code: place.regionCode,
-            settlement_id: String(place.settlement.id),
-            lat: String(place.settlement.lat),
-            lng: String(place.settlement.lng),
+            city: home.name,
+            region: "Мангистауская область",
+            region_code: "09",
+            lat: String(home.lat),
+            lng: String(home.lng),
             consent_privacy: "true",
             consent_terms: "true",
             consent_data: "true",
