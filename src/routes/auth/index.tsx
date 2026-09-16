@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { fallbackUsername } from "@/lib/username";
 import { WheelDatePicker } from "@/components/WheelDatePicker";
+import { REGIONS } from "@/lib/regions";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { getEmailVerificationStatus, requestEmailOtp, verifyEmailOtp } from "@/lib/otp.functions";
