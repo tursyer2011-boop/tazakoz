@@ -7,9 +7,6 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
-import { UsernameField, type UsernameState } from "@/components/UsernameField";
 import { fallbackUsername } from "@/lib/username";
 import { WheelDatePicker } from "@/components/WheelDatePicker";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,14 +49,8 @@ function AuthScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [patronymic, setPatronymic] = useState("");
-  const [username, setUsername] = useState("");
-  const [usernameState, setUsernameState] = useState<UsernameState>("empty");
   const [birthDate, setBirthDate] = useState("");
   const [phone, setPhone] = useState("");
-  const [place, setPlace] = useState<PickedLocation | null>(null);
-  const [agree, setAgree] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [code, setCode] = useState(EMPTY_CODE);
@@ -377,15 +368,6 @@ function AuthScreen() {
                 </div>
               )}
 
-              {mode === "signup" && (
-                <label className="flex items-start gap-3 rounded-2xl bg-secondary/40 p-3 text-sm">
-                  <Checkbox checked={agree} onCheckedChange={(v) => setAgree(v === true)} className="mt-0.5" />
-                  <span className="text-muted-foreground">
-                    Я принимаю условия использования и даю согласие на обработку персональных данных
-                    в соответствии с законодательством Республики Казахстан.
-                  </span>
-                </label>
-              )}
 
               <Button
                 type="submit"
