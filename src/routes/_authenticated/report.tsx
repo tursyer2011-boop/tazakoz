@@ -113,6 +113,14 @@ function ReportPage() {
       toast.error("Добавьте фото");
       return;
     }
+    if (geoState === "pending") {
+      toast.error("Ждём определения местоположения");
+      return;
+    }
+    if (geoState === "failed" && !manual) {
+      toast.error("Разрешите геолокацию или укажите точку вручную");
+      return;
+    }
     setBusy(true);
     setResult(null);
     try {
