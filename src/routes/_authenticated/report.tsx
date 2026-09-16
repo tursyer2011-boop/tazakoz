@@ -177,28 +177,66 @@ function ReportPage() {
 
       <div className="rounded-2xl border border-border bg-card p-4">
         <div className="flex items-center gap-2 text-sm">
-          <MapPin className="size-4 text-primary" />
-          <span>{hasGeo ? "Геолокация определена" : "Геолокация недоступна — задайте вручную"}</span>
+          {geoState === "pending" ? (
+            <Loader2 className="size-4 animate-spin text-primary" />
+          ) : (
+            <MapPin className={hasGeo ? "size-4 text-primary" : "size-4 text-destructive"} />
+          )}
+          <span>
+            {geoState === "pending"
+              ? "Определяем ваше местоположение..."
+              : hasGeo
+                ? "Местоположение определено автоматически"
+                : "Не удалось определить местоположение"}
+          </span>
         </div>
+
+        {hasGeo && (
+          <p className="mt-2 text-sm font-medium">{address || "Уточняем адрес..."}</p>
+        )}
         <p className="mt-1 text-xs text-muted-foreground">
-          {nearestRegion(coords.lat, coords.lng)} · {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+          {nearestRegion(coords.lat, coords.lng)} · {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
+          {accuracy != null && hasGeo ? ` · точность ±${Math.round(accuracy)} м` : ""}
         </p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <input
-            type="number"
-            step="0.0001"
-            value={coords.lat}
-            onChange={(e) => setCoords((c) => ({ ...c, lat: Number(e.target.value) }))}
-            className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
-          />
-          <input
-            type="number"
-            step="0.0001"
-            value={coords.lng}
-            onChange={(e) => setCoords((c) => ({ ...c, lng: Number(e.target.value) }))}
-            className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
-          />
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button type="button" variant="secondary" className="h-9 rounded-xl text-xs" onClick={locate}>
+            Обновить местоположение
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-9 rounded-xl text-xs"
+            onClick={() => setManual((m) => !m)}
+          >
+            {manual ? "Скрыть ручной ввод" : "Указать вручную"}
+          </Button>
         </div>
+
+        {!hasGeo && geoState === "failed" && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Разрешите доступ к геолокации в браузере — тогда работник увидит точный адрес отправки.
+          </p>
+        )}
+
+        {manual && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <input
+              type="number"
+              step="0.00001"
+              value={coords.lat}
+              onChange={(e) => setCoords((c) => ({ ...c, lat: Number(e.target.value) }))}
+              className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
+            />
+            <input
+              type="number"
+              step="0.00001"
+              value={coords.lng}
+              onChange={(e) => setCoords((c) => ({ ...c, lng: Number(e.target.value) }))}
+              className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
+            />
+          </div>
+        )}
       </div>
 
       <Textarea
