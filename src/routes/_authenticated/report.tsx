@@ -146,6 +146,14 @@ function ReportPage() {
       })) as Result;
 
       setResult(res);
+      // Сбрасываем фото и текст, чтобы одно и то же нельзя было отправить дважды.
+      setFile(null);
+      setPreview((p) => {
+        if (p) URL.revokeObjectURL(p);
+        return null;
+      });
+      setComment("");
+      if (fileRef.current) fileRef.current.value = "";
       await queryClient.invalidateQueries();
       if (res.approved) toast.success(`Принято! +${res.credits} кредитов`);
     } catch (err) {

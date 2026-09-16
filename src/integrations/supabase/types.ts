@@ -652,6 +652,7 @@ export type Database = {
           id: string
           lat: number
           lng: number
+          photo_hash: string
           photo_url: string
           region: string
           region_code: string
@@ -679,6 +680,7 @@ export type Database = {
           id?: string
           lat: number
           lng: number
+          photo_hash?: string
           photo_url: string
           region?: string
           region_code?: string
@@ -706,6 +708,7 @@ export type Database = {
           id?: string
           lat?: number
           lng?: number
+          photo_hash?: string
           photo_url?: string
           region?: string
           region_code?: string

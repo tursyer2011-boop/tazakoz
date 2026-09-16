@@ -7,11 +7,9 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
-import { UsernameField, type UsernameState } from "@/components/UsernameField";
 import { fallbackUsername } from "@/lib/username";
 import { WheelDatePicker } from "@/components/WheelDatePicker";
+import { REGIONS } from "@/lib/regions";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { getEmailVerificationStatus, requestEmailOtp, verifyEmailOtp } from "@/lib/otp.functions";
@@ -52,14 +50,8 @@ function AuthScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [patronymic, setPatronymic] = useState("");
-  const [username, setUsername] = useState("");
-  const [usernameState, setUsernameState] = useState<UsernameState>("empty");
   const [birthDate, setBirthDate] = useState("");
   const [phone, setPhone] = useState("");
-  const [place, setPlace] = useState<PickedLocation | null>(null);
-  const [agree, setAgree] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [code, setCode] = useState(EMPTY_CODE);
@@ -123,8 +115,8 @@ function AuthScreen() {
         return;
       }
 
-      if (!lastName.trim() || !firstName.trim()) {
-        toast.error("Укажите фамилию и имя");
+      if (!firstName.trim()) {
+        toast.error("Укажите имя");
         return;
       }
       if (!/^\+?\d{10,15}$/.test(phone.replace(/[\s()-]/g, ""))) {
@@ -135,27 +127,12 @@ function AuthScreen() {
         toast.error("Укажите дату рождения");
         return;
       }
-      if (!place) {
-        toast.error("Выберите регион и населённый пункт");
-        return;
-      }
       if (password.length < 8) {
         toast.error("Пароль должен быть не короче 8 символов");
         return;
       }
-      if (usernameState === "taken") {
-        toast.error("Этот никнейм уже занят. Пожалуйста, выберите другой.");
-        return;
-      }
-      if (usernameState === "invalid") {
-        toast.error("Никнейм: 3–24 символа, латиница, цифры, «_» и «.»");
-        return;
-      }
-      if (!agree) {
-        toast.error("Подтвердите согласие с условиями и обработкой данных");
-        return;
-      }
 
+      const home = REGIONS[0]!;
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -163,17 +140,16 @@ function AuthScreen() {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            patronymic: patronymic.trim(),
-            username: username.trim() || fallbackUsername(),
+            last_name: "",
+            patronymic: "",
+            username: fallbackUsername(),
             phone: phone.trim(),
             birth_date: birthDate,
-            city: place.settlement.name,
-            region: place.regionName,
-            region_code: place.regionCode,
-            settlement_id: String(place.settlement.id),
-            lat: String(place.settlement.lat),
-            lng: String(place.settlement.lng),
+            city: home.name,
+            region: "Мангистауская область",
+            region_code: "09",
+            lat: String(home.lat),
+            lng: String(home.lng),
             consent_privacy: "true",
             consent_terms: "true",
             consent_data: "true",
@@ -350,29 +326,17 @@ function AuthScreen() {
               {mode === "signup" && (
                 <>
                   <div className="grid gap-1.5">
-                    <Label htmlFor="last">Фамилия</Label>
-                    <Input id="last" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-11 rounded-xl" maxLength={60} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="first">Имя</Label>
-                      <Input id="first" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-11 rounded-xl" maxLength={60} />
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="patronymic">Отчество</Label>
-                      <Input id="patronymic" value={patronymic} onChange={(e) => setPatronymic(e.target.value)} className="h-11 rounded-xl" maxLength={60} />
-                    </div>
+                    <Label htmlFor="first">Имя</Label>
+                    <Input id="first" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-11 rounded-xl" maxLength={60} />
                   </div>
                   <div className="grid gap-1.5">
                     <Label>Дата рождения</Label>
                     <WheelDatePicker value={birthDate} onChange={setBirthDate} />
                   </div>
-                  <UsernameField value={username} onChange={setUsername} onStateChange={setUsernameState} />
                   <div className="grid gap-1.5">
                     <Label htmlFor="phone">Телефон</Label>
-                    <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 700 000 00 00" className="h-11 rounded-xl" maxLength={20} />
+                    <Input id="phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 700 000 00 00" className="h-11 rounded-xl" maxLength={20} />
                   </div>
-                  <LocationPicker value={place} onChange={setPlace} />
                 </>
               )}
 
@@ -405,15 +369,6 @@ function AuthScreen() {
                 </div>
               )}
 
-              {mode === "signup" && (
-                <label className="flex items-start gap-3 rounded-2xl bg-secondary/40 p-3 text-sm">
-                  <Checkbox checked={agree} onCheckedChange={(v) => setAgree(v === true)} className="mt-0.5" />
-                  <span className="text-muted-foreground">
-                    Я принимаю условия использования и даю согласие на обработку персональных данных
-                    в соответствии с законодательством Республики Казахстан.
-                  </span>
-                </label>
-              )}
 
               <Button
                 type="submit"

@@ -14,10 +14,53 @@ const SubmitInput = z.object({
   region: z.string().max(80).default(""),
 });
 
+async function sha256(input: string): Promise<string> {
+  const bytes = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function metersBetween(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371000;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLng = ((bLng - aLng) * Math.PI) / 180;
+  const lat1 = (aLat * Math.PI) / 180;
+  const lat2 = (bLat * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
 export const submitReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => SubmitInput.parse(data))
   .handler(async ({ data, context }) => {
+    const photoHash = await sha256(data.imageBase64);
+    const { supabaseAdmin: dupAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 1) Точно такое же фото уже отправляли — повтор не оплачивается.
+    const { data: samePhoto } = await dupAdmin
+      .from("reports")
+      .select("id")
+      .eq("photo_hash", photoHash)
+      .limit(1)
+      .maybeSingle();
+    if (samePhoto) {
+      throw new Error("Это фото уже отправляли. Сделайте новое фото загрязнения.");
+    }
+
+    // 2) Та же точка от того же пользователя за последние 24 часа.
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recent } = await dupAdmin
+      .from("reports")
+      .select("lat, lng")
+      .eq("user_id", context.userId)
+      .gte("created_at", since);
+    if ((recent ?? []).some((r) => metersBetween(data.lat, data.lng, r.lat, r.lng) < 100)) {
+      throw new Error("Вы уже отправляли жалобу с этого места за последние 24 часа.");
+    }
+
     const [verdict, place] = await Promise.all([
       analyzePollution(data.imageBase64, data.comment),
       reverseGeocode(data.lat, data.lng),
@@ -34,6 +77,7 @@ export const submitReport = createServerFn({ method: "POST" })
       .insert({
         user_id: context.userId,
         photo_url: data.photoPath,
+        photo_hash: photoHash,
         comment: data.comment,
         lat: data.lat,
         lng: data.lng,

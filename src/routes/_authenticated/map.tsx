@@ -70,6 +70,7 @@ async function fetchAllDepots(): Promise<Depot[]> {
       .from("depots")
       .select("id, code, name, region, region_code, city, lat, lng")
       .eq("active", true)
+      .eq("region_code", "09")
       .range(from, from + 999);
     if (error) throw error;
     out.push(...((data ?? []) as Depot[]));
