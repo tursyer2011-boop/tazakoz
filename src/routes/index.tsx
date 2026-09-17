@@ -21,6 +21,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { ScrollReveal } from "@/components/ScrollReveal";
 import { useEffect } from "react";
 import { useSession } from "@/hooks/useSession";
 import { hasAnyVerifiedCache } from "@/lib/verified-cache";
@@ -142,6 +143,7 @@ function LandingPage() {
       </header>
 
       <section className="flex flex-col items-center gap-6 pt-6 pb-14 text-center">
+        <ScrollReveal className="flex flex-col items-center gap-6">
         <Logo />
         <h1 className="text-brand-gradient max-w-2xl text-4xl leading-tight font-semibold sm:text-5xl">
           Чистые водоёмы Казахстана начинаются с одного снимка
@@ -153,17 +155,19 @@ function LandingPage() {
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link
             to={primaryTo}
-            className="bg-brand-gradient shadow-brand-glow rounded-2xl px-7 py-3.5 text-base font-semibold text-primary-foreground"
+            preload="intent"
+            className="bg-brand-gradient shadow-brand-glow touch-manipulation rounded-2xl px-7 py-3.5 text-base font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.97]"
           >
             {primaryLabel}
           </Link>
-          <Link to="/worker" className="neu-raised rounded-2xl px-7 py-3.5 text-base font-medium">
+          <Link to="/worker" preload="intent" className="neu-raised touch-manipulation rounded-2xl px-7 py-3.5 text-base font-medium transition-transform duration-150 active:scale-[0.97]">
             Работать в бригаде
           </Link>
         </div>
+        </ScrollReveal>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ScrollReveal className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <h2 className="sr-only">Возможности платформы</h2>
         {FEATURES.map(({ icon: Icon, title, text }) => (
           <article key={title} className="neu-raised rounded-3xl p-5 transition-transform hover:-translate-y-1">
@@ -174,9 +178,9 @@ function LandingPage() {
             <p className="mt-1 text-sm text-muted-foreground">{text}</p>
           </article>
         ))}
-      </section>
+      </ScrollReveal>
 
-      <section className="mt-14">
+      <ScrollReveal className="mt-14">
         <h2 className="text-center text-2xl font-semibold">Как это работает</h2>
         <ol className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((s) => (
@@ -187,10 +191,10 @@ function LandingPage() {
             </li>
           ))}
         </ol>
-      </section>
+      </ScrollReveal>
 
       {/* Mission & Impact */}
-      <section className="mt-16 grid gap-6 lg:grid-cols-2">
+      <ScrollReveal className="mt-16 grid gap-6 lg:grid-cols-2">
         <div className="neu-raised rounded-3xl p-6">
           <span className="neu-inset mb-4 flex size-11 items-center justify-center rounded-2xl">
             <Leaf className="size-5 text-primary" strokeWidth={1.6} />
@@ -226,10 +230,10 @@ function LandingPage() {
             </li>
           </ul>
         </div>
-      </section>
+      </ScrollReveal>
 
       {/* Interactive Stats */}
-      <section className="mt-16">
+      <ScrollReveal className="mt-16">
         <h2 className="text-center text-2xl font-semibold">Цифры TAZA KÖZ</h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           {STATS.map(({ value, label, icon: Icon }) => (
@@ -245,10 +249,11 @@ function LandingPage() {
             </article>
           ))}
         </div>
-      </section>
+      </ScrollReveal>
 
       {/* Creators & Team */}
-      <section className="mt-16" id="creators">
+      <ScrollReveal className="mt-16" delay={40}>
+        <section id="creators">
         <div className="text-center">
           <h2 className="text-3xl font-semibold">Создатели проекта</h2>
           <p className="mt-2 text-sm text-muted-foreground">Разработчики Taza Koz</p>
@@ -283,21 +288,23 @@ function LandingPage() {
             </article>
           ))}
         </div>
-      </section>
+        </section>
+      </ScrollReveal>
 
       {/* CTA */}
-      <section className="neu-raised mt-16 flex flex-col items-center gap-4 rounded-3xl px-6 py-10 text-center">
+      <ScrollReveal className="neu-raised mt-16 flex flex-col items-center gap-4 rounded-3xl px-6 py-10 text-center">
         <h2 className="text-2xl font-semibold">Kör. Habarla. Qorğa.</h2>
         <p className="max-w-lg text-sm text-muted-foreground">
           Присоединяйтесь к сообществу, которое возвращает чистоту рекам и озёрам Казахстана.
         </p>
         <Link
           to={primaryTo}
-          className="bg-brand-gradient shadow-brand-glow rounded-2xl px-7 py-3.5 text-base font-semibold text-primary-foreground"
+          preload="intent"
+          className="bg-brand-gradient shadow-brand-glow touch-manipulation rounded-2xl px-7 py-3.5 text-base font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.97]"
         >
           {primaryLabel}
         </Link>
-      </section>
+      </ScrollReveal>
 
       {/* 2026 Footer */}
       <footer className="mt-16 border-t border-border pt-8 pb-10">
