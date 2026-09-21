@@ -201,7 +201,7 @@ const RegistryInput = z.object({
   search: z.string().trim().max(120).default(""),
 });
 
-/** Единый реестр всех зарегистрированных пользователей (жители / работники). */
+/** Единый реестр всех зарегистрированных пользователей (жители / волонтёры). */
 export const listAppUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => RegistryInput.parse(data ?? {}))
@@ -292,7 +292,7 @@ export const listAdminInvites = createServerFn({ method: "POST" })
     return data ?? [];
   });
 
-/** Заявки работников со ссылками на документы (для админ-панели). */
+/** Заявки волонтёров со ссылками на документы (для админ-панели). */
 export const listWorkerApplications = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

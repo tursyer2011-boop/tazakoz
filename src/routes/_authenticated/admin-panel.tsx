@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/admin-panel")({
   head: () => ({
     meta: [
       { title: "Админ-панель — TAZA KÖZ" },
-      { name: "description", content: "Управление пользователями, ролями, заявками работников и кредитами TAZA KÖZ." },
+      { name: "description", content: "Управление пользователями, ролями, заявками волонтёров и кредитами TAZA KÖZ." },
       { property: "og:title", content: "Админ-панель — TAZA KÖZ" },
       { property: "og:description", content: "Полный контроль платформы мониторинга водоёмов." },
       { property: "og:type", content: "website" },
@@ -532,7 +532,7 @@ function ReportsAdmin() {
           <CreditTransferDialog
             reportId={r.id}
             defaultUserId={r.assigned_worker_id ?? r.user_id}
-            defaultLabel={r.assigned_worker_id ? "работник, убравший точку" : "автор жалобы"}
+            defaultLabel={r.assigned_worker_id ? "волонтёр, убравший точку" : "автор жалобы"}
           />
         </article>
       ))}
@@ -823,7 +823,7 @@ function UserRegistry() {
   const tabs: Array<{ id: "all" | "resident" | "worker"; label: string }> = [
     { id: "all", label: "Все" },
     { id: "resident", label: "Жители" },
-    { id: "worker", label: "Работники" },
+    { id: "worker", label: "Волонтёры" },
   ];
 
   return (
@@ -860,7 +860,7 @@ function UserRegistry() {
           <div className="grid grid-cols-3 gap-2">
             <StatCard icon={<Users className="size-4" />} label="Всего" value={registry.data.counts.total} />
             <StatCard icon={<Users className="size-4" />} label="Жители" value={registry.data.counts.residents} />
-            <StatCard icon={<ShieldCheck className="size-4" />} label="Работники" value={registry.data.counts.workers} />
+            <StatCard icon={<ShieldCheck className="size-4" />} label="Волонтёры" value={registry.data.counts.workers} />
           </div>
 
           {registry.data.users.map((u) => (
@@ -870,7 +870,7 @@ function UserRegistry() {
                 <span
                   className={`rounded-full px-2 py-0.5 text-[11px] ${u.kind === "worker" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}
                 >
-                  {u.kind === "worker" ? "Работник" : "Житель"}
+                  {u.kind === "worker" ? "Волонтёр" : "Житель"}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">{u.email || "почта не указана"}</p>

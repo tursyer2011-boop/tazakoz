@@ -321,8 +321,8 @@ export const getMyTeam = createServerFn({ method: "POST" })
   });
 
 /**
- * Рабочий стол работника: его ID, пункт назначения, карта зоны и ближайшие вызовы.
- * Вызовы сортируются по расстоянию от рабочей точки (GPS жалобы vs GPS работника).
+ * Рабочий стол волонтёра: его ID, пункт назначения, карта зоны и ближайшие вызовы.
+ * Вызовы сортируются по расстоянию от рабочей точки (GPS жалобы vs GPS волонтёра).
  */
 export const getWorkerBoard = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -400,7 +400,7 @@ export const getWorkerBoard = createServerFn({ method: "POST" })
               id: reporter.id,
               name: reporter.full_name || "Житель",
               username: reporter.username,
-              // Телефон виден только назначенному работнику.
+              // Телефон виден только назначенному волонтёру.
               phone: c.mine ? reporter.phone : "",
             }
           : null,

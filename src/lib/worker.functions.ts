@@ -143,7 +143,7 @@ export const applyAsWorker = createServerFn({ method: "POST" })
       .join("\n");
 
     const telegram = await sendTelegram(
-      `🧹 <b>НОВАЯ ЗАЯВКА ${isMinor ? "ВОЛОНТЁРА 16–17" : "РАБОТНИКА"}</b>\n` +
+      `🧹 <b>НОВАЯ ЗАЯВКА ${isMinor ? "ВОЛОНТЁРА 16–17" : "ВОЛОНТЁРА"}</b>\n` +
         `━━━━━━━━━━━━━━━\n` +
         `👤 <b>${data.fullName}</b>\n` +
         `📱 <code>${data.phone}</code>\n` +
@@ -231,7 +231,7 @@ export const takeTask = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => TakeInput.parse(data))
   .handler(async ({ data, context }) => {
     const isWorker = await hasRole(context.supabase, context.userId, "worker");
-    if (!isWorker) throw new Error("Доступ только для работников");
+    if (!isWorker) throw new Error("Доступ только для волонтёров");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: updated, error } = await supabaseAdmin
@@ -248,9 +248,9 @@ export const takeTask = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (error) throw new Error(error.message);
-    if (!updated) throw new Error("Задание уже взято другим работником");
+    if (!updated) throw new Error("Задание уже взято другим волонтёром");
 
-    // Приватная переписка работника с автором жалобы (видна только им двоим).
+    // Приватная переписка волонтёра с автором жалобы (видна только им двоим).
     let threadId: string | null = null;
     const { data: existing } = await supabaseAdmin
       .from("chat_threads")
@@ -282,7 +282,7 @@ export const takeTask = createServerFn({ method: "POST" })
       await supabaseAdmin.from("chat_messages").insert({
         thread_id: threadId,
         sender_id: context.userId,
-        body: "Здравствуйте! Я работник TAZA KÖZ, взял вашу жалобу в работу. После уборки пришлю фото сюда.",
+        body: "Здравствуйте! Я волонтёр TAZA KÖZ, взял вашу жалобу в работу. После уборки пришлю фото сюда.",
       });
     }
 

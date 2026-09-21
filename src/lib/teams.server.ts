@@ -82,7 +82,7 @@ export async function resolveWorkerDepot(
     candidates.push(...(data ?? []));
   }
   if (!candidates.length) {
-    // Без региона работника точку назначения подбираем только по его координатам.
+    // Без региона волонтёра точку назначения подбираем только по его координатам.
     if (opts.lat != null && opts.lng != null) {
       const point = await nearestDepot(admin, opts.lat, opts.lng);
       if (point) return point.depot;

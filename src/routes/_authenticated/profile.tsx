@@ -161,7 +161,7 @@ function ProfilePage() {
             className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm font-medium"
           >
             <HardHat className="size-5 text-primary" strokeWidth={1.6} />{" "}
-            {hasRole(me?.roles, "worker", "captain") ? "Мои задания" : "Стать работником"}
+            {hasRole(me?.roles, "worker", "captain") ? "Мои задания" : "Стать волонтёром"}
           </Link>
         )}
         {isStaff && (

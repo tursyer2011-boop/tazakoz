@@ -42,7 +42,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           if (known) {
             if (text.startsWith("/start") || text.startsWith("/status")) {
               await sendTelegram(
-                `👁 <b>TAZA KÖZ</b>\n\n✅ Этот чат уже подключён как админский.\nЗаявки работников, выплаты и пожертвования приходят сюда автоматически.`,
+                `👁 <b>TAZA KÖZ</b>\n\n✅ Этот чат уже подключён как админский.\nЗаявки волонтёров, выплаты и пожертвования приходят сюда автоматически.`,
                 undefined,
                 chatId,
               );
@@ -52,7 +52,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
 
           if (text.startsWith("/start")) {
             await sendTelegram(
-              `👁 <b>TAZA KÖZ</b>\n\nЧтобы получать заявки работников, отправьте код доступа сообщением.`,
+              `👁 <b>TAZA KÖZ</b>\n\nЧтобы получать заявки волонтёров, отправьте код доступа сообщением.`,
               undefined,
               chatId,
             );
@@ -67,7 +67,7 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
                 { onConflict: "chat_id" },
               );
             await sendTelegram(
-              `✅ Доступ подтверждён. Этот чат будет получать заявки работников TAZA KÖZ.\nChat ID: <code>${chatId}</code>`,
+              `✅ Доступ подтверждён. Этот чат будет получать заявки волонтёров TAZA KÖZ.\nChat ID: <code>${chatId}</code>`,
               undefined,
               chatId,
             );

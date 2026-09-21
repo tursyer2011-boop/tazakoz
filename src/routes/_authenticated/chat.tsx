@@ -28,10 +28,10 @@ export const Route = createFileRoute("/_authenticated/chat")({
       { title: "Чат — TAZA KÖZ" },
       {
         name: "description",
-        content: "Приватная переписка жителя и работника TAZA KÖZ по конкретной жалобе: фото до и после уборки.",
+        content: "Приватная переписка жителя и волонтёра TAZA KÖZ по конкретной жалобе: фото до и после уборки.",
       },
       { property: "og:title", content: "Чат — TAZA KÖZ" },
-      { property: "og:description", content: "Личная переписка по заявке: только вы и ваш работник." },
+      { property: "og:description", content: "Личная переписка по заявке: только вы и ваш волонтёр." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -69,7 +69,7 @@ function ChatPage() {
         {(threads.data ?? []).length === 0 && !threads.isLoading && (
           <p className="glass-card rounded-3xl p-6 text-center text-sm text-muted-foreground">
             <MessagesSquare className="mx-auto mb-2 size-8" strokeWidth={1.4} />
-            Переписок пока нет. Чат открывается автоматически, когда работник берёт вашу жалобу в работу.
+            Переписок пока нет. Чат открывается автоматически, когда волонтёр берёт вашу жалобу в работу.
           </p>
         )}
         <ul className="space-y-2">
@@ -81,7 +81,7 @@ function ChatPage() {
               >
                 <p className="font-medium">{t.subject}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t.iAmWorker ? "Житель" : "Работник"}:{" "}
+                  {t.iAmWorker ? "Житель" : "Волонтёр"}:{" "}
                   {t.other ? (t.other.username ? `@${t.other.username}` : t.other.name) : "ожидается"}
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -210,7 +210,7 @@ function ThreadView({
       </button>
       <div className="glass-card mb-2 rounded-2xl p-3">
         <p className="text-sm font-medium">
-          {thread.iAmWorker ? "Житель" : "Работник"}:{" "}
+          {thread.iAmWorker ? "Житель" : "Волонтёр"}:{" "}
           {thread.other ? (thread.other.username ? `@${thread.other.username}` : thread.other.name) : "ожидается"}
         </p>
         {thread.report && (

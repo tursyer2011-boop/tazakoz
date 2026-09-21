@@ -119,7 +119,7 @@ function LandingPage() {
   const { data: me } = useProfile();
   const isWorker = hasRole(me?.roles, "worker", "captain");
 
-  // Принятый работник сразу попадает в свой кабинет, минуя главную и вход.
+  // Принятый волонтёр сразу попадает в свой кабинет, минуя главную и вход.
   useEffect(() => {
     if (isWorker) void navigate({ to: "/worker", replace: true });
   }, [isWorker, navigate]);
