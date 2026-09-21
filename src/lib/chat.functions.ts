@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
  * Приватные переписки текущего пользователя: только те, где он автор жалобы
- * или назначенный работник. Возвращает имя собеседника без лишних данных.
+ * или назначенный волонтёр. Возвращает имя собеседника без лишних данных.
  */
 export const getMyThreads = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

@@ -58,7 +58,7 @@ export function HireResultOverlay({ storageKey, status, depotCode, depotName, de
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">Ваша работа началась. Вот ваш пункт назначения:</p>
             <div className="rounded-2xl bg-secondary/70 p-4">
-              <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Ваш ID работника</p>
+              <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Ваш ID волонтёра</p>
               <p className="text-brand-gradient text-3xl font-semibold tracking-widest">{depotCode ?? "—"}</p>
               <p className="mt-1 flex items-center justify-center gap-1 text-sm text-muted-foreground">
                 <MapPin className="size-4" /> {depotName ?? "—"}

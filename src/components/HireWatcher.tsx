@@ -4,7 +4,7 @@ import { pushNotify } from "@/lib/notify";
 
 /**
  * Следит за одобрением заявки на работу и присылает уведомление от самого сайта
- * («Вы приняты на работу»). Клик по уведомлению открывает кабинет работника.
+ * («Вы приняты на работу»). Клик по уведомлению открывает кабинет волонтёра.
  */
 export function HireWatcher() {
   const notified = useRef(false);
@@ -30,7 +30,7 @@ export function HireWatcher() {
       notified.current = true;
       localStorage.setItem(key, "1");
       pushNotify("Вы приняты на работу!", {
-        body: "Откройте кабинет работника — там ваш ID и пункт назначения.",
+        body: "Откройте кабинет волонтёра — там ваш ID и пункт назначения.",
         tag: "taza-hired",
         url: "/worker",
       });

@@ -29,9 +29,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 export const Route = createFileRoute("/_authenticated/worker")({
   head: () => ({
     meta: [
-      { title: "Портал работника — TAZA KÖZ" },
-      { name: "description", content: "Заявки на уборку водоёмов, задания и награды для работников TAZA KÖZ." },
-      { property: "og:title", content: "Портал работника — TAZA KÖZ" },
+      { title: "Портал волонтёра — TAZA KÖZ" },
+      { name: "description", content: "Заявки на уборку водоёмов, задания и награды для волонтёров TAZA KÖZ." },
+      { property: "og:title", content: "Портал волонтёра — TAZA KÖZ" },
       { property: "og:description", content: "Берите задания по уборке водоёмов и получайте Taza Credits." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -75,7 +75,7 @@ function WorkerPage() {
           <HardHat className="size-6 text-primary-foreground" strokeWidth={1.6} />
         </span>
         <div>
-          <h1 className="text-xl font-semibold">Портал работника</h1>
+          <h1 className="text-xl font-semibold">Портал волонтёра</h1>
           <p className="text-xs text-muted-foreground">Уборка водоёмов Казахстана</p>
         </div>
       </header>
@@ -471,7 +471,7 @@ function WorkerTasks({ userId }: { userId: string }) {
     refetchInterval: 20_000,
   });
 
-  // Отклонённые жалобы прячем локально — их подхватит ближайший работник.
+  // Отклонённые жалобы прячем локально — их подхватит ближайший волонтёр.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(`taza-dismissed-${userId}`);
@@ -491,7 +491,7 @@ function WorkerTasks({ userId }: { userId: string }) {
       }
       return next;
     });
-    toast.message("Жалоба скрыта — её примет ближайший работник");
+    toast.message("Жалоба скрыта — её примет ближайший волонтёр");
   }
 
   // Оповещение о новых ближайших жалобах (тост + системное уведомление сайта).
@@ -577,7 +577,7 @@ function WorkerTasks({ userId }: { userId: string }) {
     <div className="space-y-4">
       <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onAfterPhoto} />
 
-      {/* Карточка работника: ID, зона работы и карта */}
+      {/* Карточка волонтёра: ID, зона работы и карта */}
       <section className="glass-card space-y-3 rounded-3xl p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -588,7 +588,7 @@ function WorkerTasks({ userId }: { userId: string }) {
             </p>
           </div>
           <span className="rounded-full bg-secondary px-3 py-1 text-xs">
-            {data.isCaptain ? "Капитан" : "Работник"}
+            {data.isCaptain ? "Капитан" : "Волонтёр"}
           </span>
         </div>
         <p className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -732,7 +732,7 @@ function WorkerTasks({ userId }: { userId: string }) {
             )}
             {!free && !mine && (
               <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                <CheckCircle2 className="size-3.5" /> Жалобу уже взял другой работник
+                <CheckCircle2 className="size-3.5" /> Жалобу уже взял другой волонтёр
               </p>
             )}
           </article>
@@ -790,7 +790,7 @@ function MyTeamCard() {
           <MapPin className="size-4" /> {depot?.name ?? "—"} · {depot?.city ?? ""} ({depot?.code ?? "—"})
         </p>
         <p className="flex items-center gap-1 text-sm text-muted-foreground">
-          <Users className="size-4" /> {memberCount}/4 в команде · {isCaptain ? "вы капитан" : "работник"}
+          <Users className="size-4" /> {memberCount}/4 в команде · {isCaptain ? "вы капитан" : "волонтёр"}
         </p>
         {isCaptain && (
           <Button

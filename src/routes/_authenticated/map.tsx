@@ -381,7 +381,7 @@ function MapPage() {
                   <p className="text-xs text-muted-foreground">
                     {point.lat.toFixed(5)}, {point.lng.toFixed(5)}
                   </p>
-                  <p className="text-xs text-muted-foreground">Бригада: 0/4 работников</p>
+                  <p className="text-xs text-muted-foreground">Бригада: 0/4 волонтёров</p>
                 </div>
               </div>
               <Button className="h-12 w-full rounded-xl" onClick={() => void checkIn()}>
