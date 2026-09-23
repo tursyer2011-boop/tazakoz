@@ -381,7 +381,12 @@ function Applications() {
   if (apps.isLoading) return <LoaderCircle className="mx-auto size-5 animate-spin text-primary" />;
   const items = apps.data ?? [];
   if (items.length === 0)
-    return <p className="glass-card rounded-3xl p-5 text-center text-sm text-muted-foreground">Заявок нет</p>;
+    return (
+      <p className="glass-card rounded-3xl p-5 text-center text-sm text-muted-foreground">
+        Пока никто не подал заявку. Заявки появятся здесь, как только пользователь нажмёт «Стать волонтёром» в профиле
+        и заполнит анкету с документами.
+      </p>
+    );
 
   return (
     <div className="space-y-3">
