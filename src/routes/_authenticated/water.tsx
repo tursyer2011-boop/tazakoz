@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/water")({
   head: () => ({
     meta: [
       { title: "Погода и вода — TAZA KÖZ" },
-      { name: "description", content: "Погода по регионам Казахстана и данные по водоёмам." },
+      { name: "description", content: "Погода по городам Мангистауской области и данные по Каспию." },
       { property: "og:title", content: "Погода и вода — TAZA KÖZ" },
       { property: "og:description", content: "Температура воздуха, ветер и последние замеры по водоёмам." },
     ],

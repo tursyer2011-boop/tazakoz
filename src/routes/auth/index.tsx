@@ -22,7 +22,7 @@ export const Route = createFileRoute("/auth/")({
       {
         name: "description",
         content:
-          "Создайте аккаунт TAZA KÖZ или войдите, чтобы сообщать о загрязнениях водоёмов Казахстана и получать Taza Credits.",
+          "Создайте аккаунт TAZA KÖZ или войдите, чтобы сообщать о загрязнениях водоёмов Мангистауской области и Каспия и получать Taza Credits.",
       },
       { property: "og:title", content: "Вход и регистрация — TAZA KÖZ" },
       {

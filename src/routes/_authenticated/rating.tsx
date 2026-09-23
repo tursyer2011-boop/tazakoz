@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated/rating")({
       { title: "Рейтинг участников — TAZA KÖZ" },
       { name: "description", content: "Топ пользователей TAZA KÖZ по накопленным кредитам." },
       { property: "og:title", content: "Рейтинг участников — TAZA KÖZ" },
-      { property: "og:description", content: "Кто больше всех защищает водоёмы Казахстана." },
+      { property: "og:description", content: "Кто больше всех защищает Каспий и водоёмы Мангистау." },
     ],
   }),
   component: RatingPage,

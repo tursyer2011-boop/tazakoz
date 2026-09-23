@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/market")({
   head: () => ({
     meta: [
       { title: "Маркет — TAZA KÖZ" },
-      { name: "description", content: "Товары TAZA KÖZ: экотовары и мерч платформы мониторинга водоёмов Казахстана." },
+      { name: "description", content: "Товары TAZA KÖZ: экотовары и мерч платформы мониторинга водоёмов Мангистау и Каспия." },
       { property: "og:title", content: "Маркет — TAZA KÖZ" },
       { property: "og:description", content: "Каталог товаров TAZA KÖZ с фото и описанием." },
       { property: "og:type", content: "website" },

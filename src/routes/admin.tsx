@@ -17,7 +17,7 @@ export const Route = createFileRoute("/admin")({
       { title: "Вход для администраторов — TAZA KÖZ" },
       { name: "description", content: "Служебный вход контролёров TAZA KÖZ: пароль доступа, область и код подтверждения." },
       { property: "og:title", content: "Вход для администраторов — TAZA KÖZ" },
-      { property: "og:description", content: "Панель контролёра команд TAZA KÖZ по областям Казахстана." },
+      { property: "og:description", content: "Панель контролёра команд TAZA KÖZ в Мангистауской области." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },

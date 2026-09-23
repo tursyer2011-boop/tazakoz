@@ -33,13 +33,13 @@ import avatarKarakat from "@/assets/team-karakat.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "TAZA KÖZ — мониторинг чистоты водоёмов Казахстана" },
+      { title: "TAZA KÖZ — чистота Каспия и водоёмов Мангистау" },
       {
         name: "description",
         content:
           "Сфотографируй загрязнение водоёма — ИИ проверит снимок, точка появится на карте, а бригада выедет на уборку. Kör. Habarla. Qorğa.",
       },
-      { property: "og:title", content: "TAZA KÖZ — чистые водоёмы Казахстана" },
+      { property: "og:title", content: "TAZA KÖZ — чистый Каспий и водоёмы Мангистау" },
       {
         property: "og:description",
         content: "Народный мониторинг загрязнений воды: ИИ-проверка фото, карта, бригады и Taza Credits.",
@@ -146,7 +146,7 @@ function LandingPage() {
         <ScrollReveal className="flex flex-col items-center gap-6">
         <Logo />
         <h1 className="text-brand-gradient max-w-2xl text-4xl leading-tight font-semibold sm:text-5xl">
-          Чистые водоёмы Казахстана начинаются с одного снимка
+          Чистый Каспий и водоёмы Мангистау начинаются с одного снимка
         </h1>
         <p className="max-w-xl text-base text-muted-foreground">
           TAZA KÖZ — народная система мониторинга загрязнений воды: вы сообщаете, ИИ проверяет,
@@ -199,7 +199,7 @@ function LandingPage() {
           <span className="neu-inset mb-4 flex size-11 items-center justify-center rounded-2xl">
             <Leaf className="size-5 text-primary" strokeWidth={1.6} />
           </span>
-          <h2 className="text-2xl font-semibold">Экологическое будущее Казахстана</h2>
+          <h2 className="text-2xl font-semibold">Экологическое будущее Мангистау и Каспия</h2>
           <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
             Мы создаём первую народную экосистему мониторинга водоёмов, где каждый житель
             становится участником большого изменения. TAZA KÖZ объединяет технологии, местные
@@ -295,7 +295,7 @@ function LandingPage() {
       <ScrollReveal className="neu-raised mt-16 flex flex-col items-center gap-4 rounded-3xl px-6 py-10 text-center">
         <h2 className="text-2xl font-semibold">Kör. Habarla. Qorğa.</h2>
         <p className="max-w-lg text-sm text-muted-foreground">
-          Присоединяйтесь к сообществу, которое возвращает чистоту рекам и озёрам Казахстана.
+          Присоединяйтесь к сообществу, которое возвращает чистоту Каспию и водоёмам Мангистауской области.
         </p>
         <Link
           to={primaryTo}

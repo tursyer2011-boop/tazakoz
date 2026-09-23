@@ -79,7 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "TAZA KÖZ — мониторинг водоёмов Казахстана" },
+      { title: "TAZA KÖZ — мониторинг водоёмов Мангистау и Каспия" },
       {
         name: "description",
         content: "Kör. Habarla. Qorğa. Сообщайте о загрязнениях водоёмов и следите за картой.",
@@ -90,7 +90,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
       { name: "apple-mobile-web-app-title", content: "TAZA KÖZ" },
       { property: "og:title", content: "TAZA KÖZ" },
-      { property: "og:description", content: "Мониторинг загрязнений водоёмов Казахстана." },
+      { property: "og:description", content: "Мониторинг загрязнений Каспия и водоёмов Мангистауской области." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },

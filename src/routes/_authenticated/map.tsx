@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/map")({
       { title: "Карта TAZA KÖZ — точки и загрязнения" },
       {
         name: "description",
-        content: "Живая карта точек TAZA KÖZ, бригад и загрязнений водоёмов по всему Казахстану.",
+        content: "Живая карта точек TAZA KÖZ, бригад и загрязнений водоёмов Мангистауской области и Каспия.",
       },
       { property: "og:title", content: "Карта TAZA KÖZ" },
       { property: "og:description", content: "Точки TAZA KÖZ, бригады и отметки о загрязнениях." },
@@ -301,7 +301,7 @@ function MapPage() {
         <div className="pointer-events-auto flex items-center justify-center gap-2">
           <Logo compact />
         </div>
-        <h1 className="sr-only">Карта точек TAZA KÖZ и загрязнений водоёмов Казахстана</h1>
+        <h1 className="sr-only">Карта точек TAZA KÖZ и загрязнений водоёмов Мангистау и Каспия</h1>
         <div className="pointer-events-auto flex gap-2">
           <Select value={region} onValueChange={setRegion}>
             <SelectTrigger className="h-10 flex-1 rounded-xl bg-card">
