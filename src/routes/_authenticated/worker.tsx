@@ -76,7 +76,7 @@ function WorkerPage() {
         </span>
         <div>
           <h1 className="text-xl font-semibold">Портал волонтёра</h1>
-          <p className="text-xs text-muted-foreground">Уборка водоёмов Казахстана</p>
+          <p className="text-xs text-muted-foreground">Уборка водоёмов Мангистау и побережья Каспия</p>
         </div>
       </header>
 

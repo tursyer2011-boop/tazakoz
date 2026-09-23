@@ -6,7 +6,7 @@ import { LoaderCircle, ShieldCheck, Users, Trash2, Coins, ClipboardList, MailChe
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, hasRole, type AppRole } from "@/hooks/useProfile";
-import { adjustCredits, getAdminOverview, getEmailDiagnostics, inviteAdmin, listAdminInvites, listAppUsers, listWorkerApplications, hideWorkerApplication, setUserRole, renameAppUser, deleteAppUser, setUserCredits } from "@/lib/admin.functions";
+import { adjustCredits, getAdminOverview, getEmailDiagnostics, inviteAdmin, listAdminInvites, listAppUsers, listWorkerApplications, hideWorkerApplication, setUserRole, renameAppUser, deleteAppUser, setUserCredits, listAdminReports, deleteAdminReport } from "@/lib/admin.functions";
 import { reviewApplication } from "@/lib/worker.functions";
 import { getAdminScope, getTeamActivity, grantTeamCredits } from "@/lib/ops.functions";
 import { OpsMap } from "@/components/OpsMap";
@@ -381,7 +381,12 @@ function Applications() {
   if (apps.isLoading) return <LoaderCircle className="mx-auto size-5 animate-spin text-primary" />;
   const items = apps.data ?? [];
   if (items.length === 0)
-    return <p className="glass-card rounded-3xl p-5 text-center text-sm text-muted-foreground">Заявок нет</p>;
+    return (
+      <p className="glass-card rounded-3xl p-5 text-center text-sm text-muted-foreground">
+        Пока никто не подал заявку. Заявки появятся здесь, как только пользователь нажмёт «Стать волонтёром» в профиле
+        и заполнит анкету с документами.
+      </p>
+    );
 
   return (
     <div className="space-y-3">
@@ -488,25 +493,27 @@ function Applications() {
 
 function ReportsAdmin() {
   const queryClient = useQueryClient();
+  const load = useServerFn(listAdminReports);
+  const removeReport = useServerFn(deleteAdminReport);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
   const reports = useQuery({
     queryKey: ["admin-reports"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("reports")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(80);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => load({ data: undefined }),
   });
 
   async function remove(id: string) {
-    const { error } = await supabase.from("reports").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else {
+    setBusy(id);
+    try {
+      await removeReport({ data: { reportId: id } });
       toast.success("Жалоба удалена");
+      setConfirmId(null);
       await queryClient.invalidateQueries({ queryKey: ["admin-reports"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Не удалось удалить жалобу");
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -518,17 +525,73 @@ function ReportsAdmin() {
   return (
     <div className="space-y-3">
       {items.map((r) => (
-        <article key={r.id} className="glass-card space-y-1 rounded-3xl p-4 text-sm">
+        <article key={r.id} className="glass-card relative space-y-2 overflow-hidden rounded-3xl p-4 text-sm">
           <div className="flex items-start justify-between gap-2">
             <p className="font-medium">{r.address || r.region || "Без адреса"}</p>
-            <button onClick={() => remove(r.id)} className="text-muted-foreground hover:text-destructive" aria-label="Удалить">
+            <button
+              onClick={() => setConfirmId(r.id)}
+              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              aria-label="Удалить жалобу"
+            >
               <Trash2 className="size-4" />
             </button>
           </div>
+
+          {confirmId === r.id && (
+            <div className="absolute inset-0 z-10 flex animate-in fade-in zoom-in-95 flex-col items-center justify-center gap-3 rounded-3xl bg-destructive/95 p-4 text-center duration-200">
+              <Trash2 className="size-8 animate-pulse text-destructive-foreground" />
+              <p className="text-sm font-semibold text-destructive-foreground">Удалить жалобу навсегда?</p>
+              <div className="flex w-full gap-2">
+                <Button size="sm" variant="secondary" className="flex-1 rounded-xl" onClick={() => setConfirmId(null)}>
+                  Отмена
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 rounded-xl bg-background text-destructive hover:bg-background/90"
+                  disabled={busy === r.id}
+                  onClick={() => remove(r.id)}
+                >
+                  {busy === r.id ? <LoaderCircle className="size-4 animate-spin" /> : "Удалить"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {r.photoUrl && (
+            <a href={r.photoUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-2xl border border-border">
+              <img src={r.photoUrl} alt="Фото жалобы" loading="lazy" className="aspect-video w-full object-cover" />
+            </a>
+          )}
+
           <p className="text-xs text-muted-foreground">
-            {r.severity} · {r.status} · {r.approved ? "подтверждена" : "отклонена ИИ"}
+            {r.severity} · {r.status} · {r.approved ? "подтверждена" : "отклонена ИИ"} ·{" "}
+            {new Date(r.created_at).toLocaleString("ru-RU")}
           </p>
-          <p className="text-muted-foreground">{r.ai_reason}</p>
+          <p>
+            Автор: <span className="font-medium">{r.authorName}</span>
+            {r.authorUsername ? ` · @${r.authorUsername}` : ""}
+            {r.authorPhone ? ` · ${r.authorPhone}` : ""}
+          </p>
+          {r.workerName && <p className="text-muted-foreground">Волонтёр: {r.workerName}</p>}
+          <p className="text-muted-foreground">Комментарий: {r.comment || "—"}</p>
+          <p className="text-xs text-muted-foreground">
+            {r.water_body ? `${r.water_body} · ` : ""}
+            {r.lat.toFixed(5)}, {r.lng.toFixed(5)} ·{" "}
+            <a
+              href={`https://www.openstreetmap.org/?mlat=${r.lat}&mlon=${r.lng}#map=17/${r.lat}/${r.lng}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary underline"
+            >
+              открыть карту
+            </a>
+          </p>
+          <p className="text-muted-foreground">ИИ: {r.ai_reason}</p>
+          {r.cleanedPhotoUrl && (
+            <a href={r.cleanedPhotoUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-2xl border border-border">
+              <img src={r.cleanedPhotoUrl} alt="Фото после уборки" loading="lazy" className="aspect-video w-full object-cover" />
+            </a>
+          )}
           <CreditTransferDialog
             reportId={r.id}
             defaultUserId={r.assigned_worker_id ?? r.user_id}

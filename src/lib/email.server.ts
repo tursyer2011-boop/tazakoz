@@ -47,7 +47,7 @@ export function otpEmailHtml(code: string) {
       <p style="color: #64748B; font-size: 13px; margin-top: 12px;">Код действует 10 минут. Никому его не сообщайте.</p>
     </div>
     <div style="border-top: 1px solid #F1F5F9; padding-top: 20px; margin-top: 32px; text-align: center; font-size: 12px; color: #94A3B8;">
-      © Taza Koz • Казахстан
+      © Taza Koz • Мангистауская область
     </div>
   </div>
 </div></body></html>`;
@@ -123,7 +123,7 @@ function inviteEmailHtml(region: string, city: string, expiresAt: Date) {
       <p style="color:#64748B;font-size:13px;margin-top:12px;">Приглашение действует до ${until}.</p>
     </div>
     <div style="border-top:1px solid #F1F5F9;padding-top:20px;margin-top:28px;text-align:center;font-size:12px;color:#94A3B8;">
-      © Taza Koz • Казахстан
+      © Taza Koz • Мангистауская область
     </div>
   </div>
 </div></body></html>`;
