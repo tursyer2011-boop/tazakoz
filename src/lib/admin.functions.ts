@@ -428,3 +428,69 @@ export const deleteAppUser = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+/** Полный список жалоб для панели: автор, фото, комментарий, координаты (включая отклонённые ИИ). */
+export const listAdminReports = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const isModerator = await hasRole(context.supabase, context.userId, "moderator");
+    if (!isModerator) await requireAdmin(context.supabase, context.userId);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("reports")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(80);
+    if (error) throw new Error(error.message);
+
+    const rows = data ?? [];
+    const authorIds = Array.from(new Set(rows.flatMap((r) => [r.user_id, r.assigned_worker_id].filter(Boolean)))) as string[];
+    const { data: profiles } = authorIds.length
+      ? await supabaseAdmin.from("profiles").select("id, full_name, username, phone, city").in("id", authorIds)
+      : { data: [] as { id: string; full_name: string; username: string | null; phone: string; city: string }[] };
+    const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+    return await Promise.all(
+      rows.map(async (r) => {
+        const signUrl = async (path: string | null) => {
+          if (!path) return null;
+          const { data: signed } = await supabaseAdmin.storage.from("reports").createSignedUrl(path, 3600);
+          return signed?.signedUrl ?? null;
+        };
+        const author = byId.get(r.user_id);
+        return {
+          ...r,
+          photoUrl: await signUrl(r.photo_url),
+          cleanedPhotoUrl: await signUrl(r.cleaned_photo_url),
+          authorName: author?.full_name || "Без имени",
+          authorUsername: author?.username ?? null,
+          authorPhone: author?.phone ?? "",
+          workerName: r.assigned_worker_id ? (byId.get(r.assigned_worker_id)?.full_name ?? null) : null,
+        };
+      }),
+    );
+  });
+
+const DeleteReportInput = z.object({ reportId: z.string().uuid() });
+
+/** Полностью удалить жалобу вместе со связанными записями. */
+export const deleteAdminReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => DeleteReportInput.parse(data))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("credit_transactions").update({ report_id: null }).eq("report_id", data.reportId);
+    await supabaseAdmin.from("team_positions").update({ target_report_id: null }).eq("target_report_id", data.reportId);
+    const { data: threads } = await supabaseAdmin.from("chat_threads").select("id").eq("report_id", data.reportId);
+    for (const t of threads ?? []) {
+      await supabaseAdmin.from("chat_messages").delete().eq("thread_id", t.id);
+    }
+    await supabaseAdmin.from("chat_threads").update({ report_id: null }).eq("report_id", data.reportId);
+
+    const { error } = await supabaseAdmin.from("reports").delete().eq("id", data.reportId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
