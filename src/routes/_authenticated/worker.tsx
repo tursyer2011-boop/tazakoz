@@ -11,6 +11,7 @@ import { applyAsWorker, completeTask, takeTask } from "@/lib/worker.functions";
 import { awardResidentCredits, getMyTeam, getWorkerBoard, requestTeamCredits } from "@/lib/ops.functions";
 import { CreditTransferDialog } from "@/components/CreditTransferDialog";
 import { OpsMap } from "@/components/OpsMap";
+import { DepotCleanupsButton } from "@/components/DepotCleanups";
 import { resizeImage, signedPhotoUrl, urlToDataUrl } from "@/lib/photos";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 import { HireResultOverlay } from "@/components/HireResultOverlay";
@@ -596,6 +597,7 @@ function WorkerTasks({ userId }: { userId: string }) {
           {data.depot ? `${data.depot.name} · ${data.depot.city}` : data.profile?.city || "не назначена"}
         </p>
         {data.depot?.address && <p className="text-xs text-muted-foreground">Адрес: {data.depot.address}</p>}
+        {data.depot && <DepotCleanupsButton depotId={data.depot.id} depotCode={data.depot.code} />}
         {data.origin && (
           <OpsMap
             heightClass="h-64"

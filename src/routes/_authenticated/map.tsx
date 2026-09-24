@@ -1,16 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { QrCode, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
+import { useProfile, hasRole } from "@/hooks/useProfile";
 import { KZ_CENTER, SEVERITY, STATUS_LABELS, type Severity } from "@/lib/regions";
 import { loadRegions } from "@/lib/geo";
-import { signedPhotoUrl } from "@/lib/photos";
+import { getAreaReports, getLiveTeams } from "@/lib/community.functions";
 import { Logo } from "@/components/Logo";
 import { PointQr } from "@/components/PointQr";
 import { QrScanner } from "@/components/QrScanner";
+import { DepotCleanupsButton } from "@/components/DepotCleanups";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -40,14 +43,11 @@ export const Route = createFileRoute("/_authenticated/map")({
 
 type Report = {
   id: string;
-  photo_url: string;
-  comment: string;
   lat: number;
   lng: number;
   region: string;
   severity: string;
   status: string;
-  created_at: string;
 };
 
 type Depot = {
@@ -57,18 +57,17 @@ type Depot = {
   region: string;
   region_code: string;
   city: string;
+  address: string;
   lat: number;
   lng: number;
 };
-
-type Worker = { id: string; lat: number; lng: number; tx: number; ty: number; code: string };
 
 async function fetchAllDepots(): Promise<Depot[]> {
   const out: Depot[] = [];
   for (let from = 0; from < 6000; from += 1000) {
     const { data, error } = await supabase
       .from("depots")
-      .select("id, code, name, region, region_code, city, lat, lng")
+      .select("id, code, name, region, region_code, city, address, lat, lng")
       .eq("active", true)
       .eq("region_code", "09")
       .range(from, from + 999);
@@ -81,28 +80,43 @@ async function fetchAllDepots(): Promise<Depot[]> {
 
 function MapPage() {
   const { user } = useSession();
+  const { data: me } = useProfile();
+  const isVolunteer = hasRole(me?.roles, "worker", "captain", "admin", "moderator");
   const [region, setRegion] = useState("all");
   const [status, setStatus] = useState("all");
-  const [selected, setSelected] = useState<Report | null>(null);
+  const [area, setArea] = useState<{ lat: number; lng: number } | null>(null);
   const [point, setPoint] = useState<Depot | null>(null);
   const [scanning, setScanning] = useState(false);
-  const [photo, setPhoto] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const pointLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const reportLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const workerLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
+  const teamMarkersRef = useRef(new Map<string, import("leaflet").Marker>());
   const [ready, setReady] = useState(false);
+
+  const areaFn = useServerFn(getAreaReports);
+  const teamsFn = useServerFn(getLiveTeams);
 
   const { data: depots = [] } = useQuery({ queryKey: ["depots", "all"], queryFn: fetchAllDepots });
   const { data: regions = [] } = useQuery({ queryKey: ["kz-regions"], queryFn: loadRegions });
+  const { data: teams = [] } = useQuery({
+    queryKey: ["live-teams"],
+    queryFn: () => teamsFn(),
+    refetchInterval: 10_000,
+  });
+  const { data: areaReports = [], isLoading: areaLoading } = useQuery({
+    queryKey: ["area-reports", area?.lat, area?.lng],
+    queryFn: () => areaFn({ data: { lat: area!.lat, lng: area!.lng, radiusM: 1200 } }),
+    enabled: !!area,
+  });
 
   const { data: reports = [] } = useQuery({
-    queryKey: ["reports", "approved"],
+    queryKey: ["reports", "approved", "pins"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("reports")
-        .select("id, photo_url, comment, lat, lng, region, severity, status, created_at")
+        .select("id, lat, lng, region, severity, status")
         .eq("approved", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -170,7 +184,10 @@ function MapPage() {
           fillOpacity: 0.35,
         });
         marker.bindTooltip(`#TK-${d.code}`, { direction: "top" });
-        marker.on("click", () => setPoint(d));
+        marker.on("click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          setPoint(d);
+        });
         marker.addTo(layer);
       }
     })();
@@ -197,7 +214,10 @@ function MapPage() {
           fillColor: color,
           fillOpacity: 0.6,
         });
-        marker.on("click", () => setSelected(r));
+        marker.on("click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          setArea({ lat: r.lat, lng: r.lng });
+        });
         marker.addTo(layer);
       }
     })();
@@ -206,62 +226,49 @@ function MapPage() {
     };
   }, [filtered, ready]);
 
-  // ---- live worker movement ------------------------------------------------
+  // ---- live team positions -------------------------------------------------
   useEffect(() => {
-    if (!ready || visibleDepots.length === 0) return;
+    if (!ready) return;
     let cancelled = false;
-    let timer: ReturnType<typeof setInterval> | null = null;
-
     void (async () => {
       const L = await import("leaflet");
       const layer = workerLayerRef.current;
       if (cancelled || !layer) return;
-
-      const picks = pickRandom(visibleDepots, Math.min(24, visibleDepots.length));
-      const workers: Worker[] = picks.map((d, i) => ({
-        id: d.id,
-        lat: d.lat + (Math.random() - 0.5) * 0.05,
-        lng: d.lng + (Math.random() - 0.5) * 0.05,
-        tx: d.lng,
-        ty: d.lat,
-        code: `TK-${d.code}-${i + 1}`,
-      }));
-
       const icon = L.divIcon({ className: "", html: `<span class="team-pin"></span>`, iconSize: [16, 16] });
-      const markers = workers.map((w) =>
-        L.marker([w.lat, w.lng], { icon }).bindTooltip(`Бригада ${w.code}`).addTo(layer),
-      );
-
-      timer = setInterval(() => {
-        workers.forEach((w, i) => {
-          const dx = w.tx - w.lng;
-          const dy = w.ty - w.lat;
-          const dist = Math.hypot(dx, dy);
-          if (dist < 0.004) {
-            const next = visibleDepots[Math.floor(Math.random() * visibleDepots.length)]!;
-            w.tx = next.lng + (Math.random() - 0.5) * 0.04;
-            w.ty = next.lat + (Math.random() - 0.5) * 0.04;
-            return;
-          }
-          const step = 0.0025;
-          w.lng += (dx / dist) * step;
-          w.lat += (dy / dist) * step;
-          markers[i]?.setLatLng([w.lat, w.lng]);
-        });
-      }, 700);
+      const seen = new Set<string>();
+      for (const t of teams) {
+        seen.add(t.team_id);
+        const existing = teamMarkersRef.current.get(t.team_id);
+        if (existing) existing.setLatLng([t.lat, t.lng]);
+        else {
+          const m = L.marker([t.lat, t.lng], { icon })
+            .bindTooltip(`Команда ${t.code} · ${t.status}`)
+            .addTo(layer);
+          teamMarkersRef.current.set(t.team_id, m);
+        }
+      }
+      for (const [id, m] of teamMarkersRef.current) {
+        if (!seen.has(id)) {
+          m.remove();
+          teamMarkersRef.current.delete(id);
+        }
+      }
     })();
-
     return () => {
       cancelled = true;
-      if (timer) clearInterval(timer);
-      workerLayerRef.current?.clearLayers();
     };
-  }, [ready, visibleDepots]);
+  }, [ready, teams]);
 
+  // ---- tap on area ---------------------------------------------------------
   useEffect(() => {
-    setPhoto(null);
-    if (selected) void signedPhotoUrl(selected.photo_url).then(setPhoto);
-  }, [selected]);
+    if (!ready || !mapRef.current) return;
+    const map = mapRef.current;
+    const onClick = (e: import("leaflet").LeafletMouseEvent) => setArea({ lat: e.latlng.lat, lng: e.latlng.lng });
+    map.on("click", onClick);
+    return () => {
+      map.off("click", onClick);
+    };
+  }, [ready]);
 
   const focusPoint = useCallback(
     (d: Depot) => {
@@ -366,7 +373,7 @@ function MapPage() {
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <QrCode className="size-5 text-primary" strokeWidth={1.6} />
-              Точка #TK-{point?.code}
+              Пункт {point?.code}
             </SheetTitle>
           </SheetHeader>
           {point && (
@@ -374,53 +381,64 @@ function MapPage() {
               <div className="flex items-center gap-4">
                 <PointQr point={point} />
                 <div className="min-w-0 space-y-1 text-sm">
+                  <p className="text-lg font-semibold tracking-widest">{point.code}</p>
                   <p className="font-medium">{point.name}</p>
                   <p className="text-muted-foreground">
-                    {point.city}, {point.region}
+                    {point.address ? `${point.address}, ` : ""}
+                    {point.city}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {point.lat.toFixed(5)}, {point.lng.toFixed(5)}
                   </p>
-                  <p className="text-xs text-muted-foreground">Бригада: 0/4 волонтёров</p>
                 </div>
               </div>
               <Button className="h-12 w-full rounded-xl" onClick={() => void checkIn()}>
                 Я на месте
               </Button>
+              {isVolunteer && <DepotCleanupsButton depotId={point.id} depotCode={point.code} />}
             </div>
           )}
         </SheetContent>
       </Sheet>
 
-      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <SheetContent side="bottom" className="z-[1200] rounded-t-3xl border-border bg-card">
+      <Sheet open={!!area} onOpenChange={(o) => !o && setArea(null)}>
+        <SheetContent side="bottom" className="z-[1200] max-h-[85vh] overflow-y-auto rounded-t-3xl border-border bg-card">
           <SheetHeader>
-            <SheetTitle>{selected?.region || "Загрязнение"}</SheetTitle>
+            <SheetTitle>Жалобы в этом районе</SheetTitle>
           </SheetHeader>
-          {selected && (
-            <div className="space-y-3 px-4 pb-6">
-              {photo ? (
-                <img src={photo} alt="Фото загрязнения" className="h-52 w-full rounded-2xl object-cover" />
-              ) : (
-                <div className="h-52 w-full animate-pulse rounded-2xl bg-muted" />
-              )}
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span
-                  className="rounded-full px-3 py-1 font-medium text-primary-foreground"
-                  style={{ backgroundColor: SEVERITY[(selected.severity as Severity) ?? "low"].color }}
-                >
-                  {SEVERITY[(selected.severity as Severity) ?? "low"].label}
-                </span>
-                <span className="rounded-full bg-secondary px-3 py-1">
-                  {STATUS_LABELS[selected.status] ?? selected.status}
-                </span>
-                <span className="text-muted-foreground">
-                  {new Date(selected.created_at).toLocaleDateString("ru-RU")}
-                </span>
-              </div>
-              {selected.comment && <p className="text-sm text-foreground">{selected.comment}</p>}
-            </div>
-          )}
+          <div className="space-y-3 px-4 pb-6">
+            {areaLoading && <div className="h-52 w-full animate-pulse rounded-2xl bg-muted" />}
+            {!areaLoading && areaReports.length === 0 && (
+              <p className="text-sm text-muted-foreground">Здесь пока нет одобренных жалоб.</p>
+            )}
+            {areaReports.map((r) => {
+              const sev = SEVERITY[(r.severity as Severity) ?? "low"] ?? SEVERITY.low;
+              return (
+                <div key={r.id} className="space-y-2 rounded-2xl bg-secondary/50 p-3">
+                  {r.photoUrl ? (
+                    <img src={r.photoUrl} alt="Фото жалобы" loading="lazy" className="h-48 w-full rounded-xl object-cover" />
+                  ) : (
+                    <div className="h-48 w-full rounded-xl bg-muted" />
+                  )}
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="font-semibold text-foreground">{r.username ? `@${r.username}` : "Житель"}</span>
+                    <span
+                      className="rounded-full px-2.5 py-0.5 font-medium text-primary-foreground"
+                      style={{ backgroundColor: sev.color }}
+                    >
+                      {sev.label}
+                    </span>
+                    <span className="rounded-full bg-secondary px-2.5 py-0.5">
+                      {STATUS_LABELS[r.status] ?? r.status}
+                    </span>
+                    <span className="text-muted-foreground">{new Date(r.created_at).toLocaleDateString("ru-RU")}</span>
+                  </div>
+                  {r.address && <p className="text-xs text-muted-foreground">{r.address}</p>}
+                  {r.comment && <p className="text-sm">{r.comment}</p>}
+                </div>
+              );
+            })}
+          </div>
         </SheetContent>
       </Sheet>
     </div>
