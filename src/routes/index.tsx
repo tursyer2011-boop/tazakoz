@@ -33,18 +33,26 @@ import avatarKarakat from "@/assets/team-karakat.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "TAZA KÖZ — чистота Каспия и водоёмов Мангистау" },
+      { title: "Тазакоз (Таза Көз, TAZA KÖZ) — чистота Каспия и Мангистау" },
       {
         name: "description",
         content:
-          "Сфотографируй загрязнение водоёма — ИИ проверит снимок, точка появится на карте, а бригада выедет на уборку. Kör. Habarla. Qorğa.",
+          "Тазакоз / Таза Көз / TazaKoz — сфотографируй загрязнение водоёма: ИИ проверит снимок, точка появится на карте, бригада выедет на уборку. Мангистау и Каспий.",
       },
-      { property: "og:title", content: "TAZA KÖZ — чистый Каспий и водоёмы Мангистау" },
+      {
+        name: "keywords",
+        content:
+          "тазакоз, таза коз, таза көз, тазакөз, taza koz, tazakoz, taza köz, Мангистау, Каспий, экология Актау, загрязнение воды",
+      },
+      { property: "og:title", content: "Тазакоз (TAZA KÖZ) — чистый Каспий и водоёмы Мангистау" },
       {
         property: "og:description",
-        content: "Народный мониторинг загрязнений воды: ИИ-проверка фото, карта, бригады и Taza Credits.",
+        content: "Таза Көз — народный мониторинг загрязнений воды: ИИ-проверка фото, карта, бригады и Taza Credits.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "ru_RU" },
+      { property: "og:locale:alternate", content: "kk_KZ" },
+      { property: "og:url", content: "https://tazakoz.online/" },
       {
         property: "og:image",
         content: "https://tazakoz.online/__l5e/assets-v1/e117ff63-8c3c-4076-917e-32ca2e49b72c/tazakoz-logo-2026.jpg",
@@ -54,6 +62,20 @@ export const Route = createFileRoute("/")({
         content: "https://tazakoz.online/__l5e/assets-v1/e117ff63-8c3c-4076-917e-32ca2e49b72c/tazakoz-logo-2026.jpg",
       },
       { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [{ rel: "canonical", href: "https://tazakoz.online/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "TAZA KÖZ",
+          alternateName: ["Тазакоз", "Таза Көз", "Таза Коз", "Тазакөз", "TazaKoz", "Taza Koz"],
+          url: "https://tazakoz.online/",
+          inLanguage: ["ru", "kk"],
+        }),
+      },
     ],
   }),
   component: LandingPage,
@@ -312,7 +334,7 @@ function LandingPage() {
           <div className="flex items-center gap-3">
             <Logo compact />
             <div>
-              <p className="text-sm font-semibold">TAZA KOZ</p>
+              <p className="text-sm font-semibold">TAZA KOZ · Тазакоз · Таза Көз</p>
               <p className="text-xs text-muted-foreground">Чистота одним касанием</p>
             </div>
           </div>
