@@ -51,13 +51,21 @@ export const createProduct = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     let path = "";
-    if (data.photoDataUrl.startsWith("data:")) {
-      const base64 = data.photoDataUrl.split(",")[1] ?? "";
-      const bytes = Buffer.from(base64, "base64");
-      path = `products/${crypto.randomUUID()}.jpg`;
+    if (data.photoDataUrl) {
+      const m = /^data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(data.photoDataUrl);
+      if (!m) throw new Error("Допустимы только изображения JPEG, PNG или WebP");
+      const bytes = Buffer.from(m[2], "base64");
+      const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+      const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+      const isWebp = bytes.subarray(0, 4).toString("ascii") === "RIFF" && bytes.subarray(8, 12).toString("ascii") === "WEBP";
+      if (!isJpeg && !isPng && !isWebp) throw new Error("Файл не является изображением");
+      if (bytes.length > 5_000_000) throw new Error("Фото слишком большое");
+      const contentType = isJpeg ? "image/jpeg" : isPng ? "image/png" : "image/webp";
+      const ext = isJpeg ? "jpg" : isPng ? "png" : "webp";
+      path = `products/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabaseAdmin.storage
         .from("market")
-        .upload(path, bytes, { contentType: "image/jpeg", upsert: false });
+        .upload(path, bytes, { contentType, upsert: false });
       if (upErr) throw new Error(upErr.message);
     }
 

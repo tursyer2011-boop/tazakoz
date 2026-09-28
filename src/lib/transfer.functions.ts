@@ -32,7 +32,8 @@ export const findUsers = createServerFn({ method: "POST" })
     await actorRoles(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const q = data.query.replace(/^@/, "").trim();
+    const q = data.query.replace(/^@/, "").replace(/[^\p{L}\p{N}_.\- ]/gu, "").trim();
+    if (!q) return { users: [] };
     let query = supabaseAdmin
       .from("profiles")
       .select("id, username, full_name, city, region, credits, total_credits")

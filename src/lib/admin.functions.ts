@@ -217,7 +217,8 @@ export const listAppUsers = createServerFn({ method: "POST" })
 
     if (data.kind !== "all") query = query.eq("kind", data.kind);
     if (data.search) {
-      const q = `%${data.search}%`;
+      const safe = data.search.replace(/[^\p{L}\p{N}_.@+\- ]/gu, "").trim();
+      const q = `%${safe}%`;
       query = query.or(`full_name.ilike.${q},email.ilike.${q},phone.ilike.${q},city.ilike.${q}`);
     }
 

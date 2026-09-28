@@ -317,6 +317,8 @@ export const completeTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => CompleteInput.parse(data))
   .handler(async ({ data, context }) => {
+    const afterRe = new RegExp(`^${context.userId}/cleaned-[0-9a-f-]{36}\\.jpg$`);
+    if (!afterRe.test(data.afterPhotoPath)) throw new Error("Некорректный путь к фото");
     const { data: report, error: readError } = await context.supabase
       .from("reports")
       .select("id, assigned_worker_id, worker_reward, severity")
