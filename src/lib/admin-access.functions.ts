@@ -217,6 +217,14 @@ export const claimFirstAdmin = createServerFn({ method: "POST" })
     if (!(await bootstrapOpen(supabaseAdmin))) {
       throw new Error("Первичная регистрация владельца уже закрыта");
     }
+    // Только действующий администратор может закрепить за собой постоянные права.
+    const { data: ownRole } = await context.supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!ownRole) throw new Error("Недостаточно прав");
 
     // снять админку со всех остальных
     await supabaseAdmin.from("user_roles").delete().eq("role", "admin").neq("user_id", context.userId);

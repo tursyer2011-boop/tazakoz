@@ -36,6 +36,8 @@ export const submitReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => SubmitInput.parse(data))
   .handler(async ({ data, context }) => {
+    const photoRe = new RegExp(`^${context.userId}/[0-9a-f-]{36}\\.jpg$`);
+    if (!photoRe.test(data.photoPath)) throw new Error("Некорректный путь к фото");
     const photoHash = await sha256(data.imageBase64);
     const { supabaseAdmin: dupAdmin } = await import("@/integrations/supabase/client.server");
 

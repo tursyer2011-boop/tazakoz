@@ -83,6 +83,11 @@ export const applyAsWorker = createServerFn({ method: "POST" })
       if (!data.docFrontUrl) throw new Error("Загрузите фото документа");
     }
 
+    const docPathRe = new RegExp(`^${context.userId}/doc-[0-9a-f-]{36}\\.jpg$`);
+    for (const path of [data.docFrontUrl, data.docBackUrl, data.selfieUrl, data.parentDocUrl]) {
+      if (path && !docPathRe.test(path)) throw new Error("Некорректный файл документа");
+    }
+
     const { data: application, error } = await context.supabase
       .from("worker_applications")
       .insert({
@@ -234,6 +239,23 @@ export const takeTask = createServerFn({ method: "POST" })
     if (!isWorker) throw new Error("Доступ только для волонтёров");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: target } = await supabaseAdmin
+      .from("reports")
+      .select("id, approved, team_id, user_id")
+      .eq("id", data.reportId)
+      .maybeSingle();
+    if (!target || !target.approved) throw new Error("Задание недоступно");
+    if (target.user_id === context.userId) throw new Error("Нельзя взять собственную жалобу");
+    if (target.team_id) {
+      const { data: membership } = await supabaseAdmin
+        .from("team_members")
+        .select("team_id")
+        .eq("user_id", context.userId)
+        .eq("team_id", target.team_id)
+        .maybeSingle();
+      if (!membership) throw new Error("Задание закреплено за другой командой");
+    }
+
     const { data: updated, error } = await supabaseAdmin
       .from("reports")
       .update({
@@ -243,6 +265,7 @@ export const takeTask = createServerFn({ method: "POST" })
         updated_at: new Date().toISOString(),
       })
       .eq("id", data.reportId)
+      .eq("approved", true)
       .is("assigned_worker_id", null)
       .select()
       .maybeSingle();
@@ -294,6 +317,8 @@ export const completeTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => CompleteInput.parse(data))
   .handler(async ({ data, context }) => {
+    const afterRe = new RegExp(`^${context.userId}/cleaned-[0-9a-f-]{36}\\.jpg$`);
+    if (!afterRe.test(data.afterPhotoPath)) throw new Error("Некорректный путь к фото");
     const { data: report, error: readError } = await context.supabase
       .from("reports")
       .select("id, assigned_worker_id, worker_reward, severity")

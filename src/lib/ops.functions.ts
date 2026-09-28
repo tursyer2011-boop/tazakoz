@@ -170,7 +170,9 @@ export const grantTeamCredits = createServerFn({ method: "POST" })
       await supabaseAdmin
         .from("credit_requests")
         .update({ status: "approved", decided_by: context.userId, decided_at: new Date().toISOString() })
-        .eq("id", data.requestId);
+        .eq("id", data.requestId)
+        .eq("team_id", team.id)
+        .eq("status", "pending");
     }
     return { ok: true };
   });
@@ -232,6 +234,7 @@ export const awardResidentCredits = createServerFn({ method: "POST" })
       .eq("id", data.reportId)
       .maybeSingle();
     if (!report) throw new Error("Заявка не найдена");
+    if (report.team_id !== member.team_id) throw new Error("Эта заявка другой команды");
 
     const { data: already } = await supabaseAdmin
       .from("credit_transactions")
