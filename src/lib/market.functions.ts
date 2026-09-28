@@ -54,7 +54,7 @@ export const createProduct = createServerFn({ method: "POST" })
     if (data.photoDataUrl) {
       const m = /^data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(data.photoDataUrl);
       if (!m) throw new Error("Допустимы только изображения JPEG, PNG или WebP");
-      const bytes = Buffer.from(m[2], "base64");
+      const bytes = Buffer.from(m[2] ?? "", "base64");
       const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
       const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
       const isWebp = bytes.subarray(0, 4).toString("ascii") === "RIFF" && bytes.subarray(8, 12).toString("ascii") === "WEBP";
