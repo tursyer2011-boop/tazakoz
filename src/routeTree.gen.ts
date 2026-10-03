@@ -25,6 +25,13 @@ import { Route as AuthenticatedWaterRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedWorkerRouteImport } from './routes/_authenticated/worker'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as LiteIndexRouteImport } from './routes/lite/index'
+import { Route as LiteDepotsRouteImport } from './routes/lite/depots'
+import { Route as LiteLoginRouteImport } from './routes/lite/login'
+import { Route as LiteLogoutRouteImport } from './routes/lite/logout'
+import { Route as LiteProfileRouteImport } from './routes/lite/profile'
+import { Route as LiteRatingRouteImport } from './routes/lite/rating'
+import { Route as LiteReportRouteImport } from './routes/lite/report'
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -106,6 +113,41 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LiteIndexRoute = LiteIndexRouteImport.update({
+  id: '/lite/',
+  path: '/lite/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiteDepotsRoute = LiteDepotsRouteImport.update({
+  id: '/lite/depots',
+  path: '/lite/depots',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiteLoginRoute = LiteLoginRouteImport.update({
+  id: '/lite/login',
+  path: '/lite/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiteLogoutRoute = LiteLogoutRouteImport.update({
+  id: '/lite/logout',
+  path: '/lite/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiteProfileRoute = LiteProfileRouteImport.update({
+  id: '/lite/profile',
+  path: '/lite/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiteRatingRoute = LiteRatingRouteImport.update({
+  id: '/lite/rating',
+  path: '/lite/rating',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiteReportRoute = LiteReportRouteImport.update({
+  id: '/lite/report',
+  path: '/lite/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicTelegramWebhookRoute =
   ApiPublicTelegramWebhookRouteImport.update({
     id: '/api/public/telegram/webhook',
@@ -128,7 +170,14 @@ export interface FileRoutesByFullPath {
   '/water': typeof AuthenticatedWaterRoute
   '/worker': typeof AuthenticatedWorkerRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/lite/depots': typeof LiteDepotsRoute
+  '/lite/login': typeof LiteLoginRoute
+  '/lite/logout': typeof LiteLogoutRoute
+  '/lite/profile': typeof LiteProfileRoute
+  '/lite/rating': typeof LiteRatingRoute
+  '/lite/report': typeof LiteReportRoute
   '/auth/': typeof AuthIndexRoute
+  '/lite/': typeof LiteIndexRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -146,7 +195,14 @@ export interface FileRoutesByTo {
   '/water': typeof AuthenticatedWaterRoute
   '/worker': typeof AuthenticatedWorkerRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/lite/depots': typeof LiteDepotsRoute
+  '/lite/login': typeof LiteLoginRoute
+  '/lite/logout': typeof LiteLogoutRoute
+  '/lite/profile': typeof LiteProfileRoute
+  '/lite/rating': typeof LiteRatingRoute
+  '/lite/report': typeof LiteReportRoute
   '/auth': typeof AuthIndexRoute
+  '/lite': typeof LiteIndexRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRoutesById {
@@ -166,7 +222,14 @@ export interface FileRoutesById {
   '/_authenticated/water': typeof AuthenticatedWaterRoute
   '/_authenticated/worker': typeof AuthenticatedWorkerRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/lite/depots': typeof LiteDepotsRoute
+  '/lite/login': typeof LiteLoginRoute
+  '/lite/logout': typeof LiteLogoutRoute
+  '/lite/profile': typeof LiteProfileRoute
+  '/lite/rating': typeof LiteRatingRoute
+  '/lite/report': typeof LiteReportRoute
   '/auth/': typeof AuthIndexRoute
+  '/lite/': typeof LiteIndexRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRouteTypes {
@@ -186,7 +249,14 @@ export interface FileRouteTypes {
     | '/water'
     | '/worker'
     | '/auth/callback'
+    | '/lite/depots'
+    | '/lite/login'
+    | '/lite/logout'
+    | '/lite/profile'
+    | '/lite/rating'
+    | '/lite/report'
     | '/auth/'
+    | '/lite/'
     | '/api/public/telegram/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -204,7 +274,14 @@ export interface FileRouteTypes {
     | '/water'
     | '/worker'
     | '/auth/callback'
+    | '/lite/depots'
+    | '/lite/login'
+    | '/lite/logout'
+    | '/lite/profile'
+    | '/lite/rating'
+    | '/lite/report'
     | '/auth'
+    | '/lite'
     | '/api/public/telegram/webhook'
   id:
     | '__root__'
@@ -223,7 +300,14 @@ export interface FileRouteTypes {
     | '/_authenticated/water'
     | '/_authenticated/worker'
     | '/auth/callback'
+    | '/lite/depots'
+    | '/lite/login'
+    | '/lite/logout'
+    | '/lite/profile'
+    | '/lite/rating'
+    | '/lite/report'
     | '/auth/'
+    | '/lite/'
     | '/api/public/telegram/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -234,7 +318,14 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  LiteDepotsRoute: typeof LiteDepotsRoute
+  LiteLoginRoute: typeof LiteLoginRoute
+  LiteLogoutRoute: typeof LiteLogoutRoute
+  LiteProfileRoute: typeof LiteProfileRoute
+  LiteRatingRoute: typeof LiteRatingRoute
+  LiteReportRoute: typeof LiteReportRoute
   AuthIndexRoute: typeof AuthIndexRoute
+  LiteIndexRoute: typeof LiteIndexRoute
   ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
 }
 
@@ -352,6 +443,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lite/': {
+      id: '/lite/'
+      path: '/lite'
+      fullPath: '/lite/'
+      preLoaderRoute: typeof LiteIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lite/depots': {
+      id: '/lite/depots'
+      path: '/lite/depots'
+      fullPath: '/lite/depots'
+      preLoaderRoute: typeof LiteDepotsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lite/login': {
+      id: '/lite/login'
+      path: '/lite/login'
+      fullPath: '/lite/login'
+      preLoaderRoute: typeof LiteLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lite/logout': {
+      id: '/lite/logout'
+      path: '/lite/logout'
+      fullPath: '/lite/logout'
+      preLoaderRoute: typeof LiteLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lite/profile': {
+      id: '/lite/profile'
+      path: '/lite/profile'
+      fullPath: '/lite/profile'
+      preLoaderRoute: typeof LiteProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lite/rating': {
+      id: '/lite/rating'
+      path: '/lite/rating'
+      fullPath: '/lite/rating'
+      preLoaderRoute: typeof LiteRatingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lite/report': {
+      id: '/lite/report'
+      path: '/lite/report'
+      fullPath: '/lite/report'
+      preLoaderRoute: typeof LiteReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/telegram/webhook': {
       id: '/api/public/telegram/webhook'
       path: '/api/public/telegram/webhook'
@@ -396,7 +536,14 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  LiteDepotsRoute: LiteDepotsRoute,
+  LiteLoginRoute: LiteLoginRoute,
+  LiteLogoutRoute: LiteLogoutRoute,
+  LiteProfileRoute: LiteProfileRoute,
+  LiteRatingRoute: LiteRatingRoute,
+  LiteReportRoute: LiteReportRoute,
   AuthIndexRoute: AuthIndexRoute,
+  LiteIndexRoute: LiteIndexRoute,
   ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
 }
 export const routeTree = rootRouteImport
