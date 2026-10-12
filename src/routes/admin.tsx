@@ -162,7 +162,7 @@ function AdminGate() {
   }
 
   const recoveryLink =
-    step === "details" || step === "password" ? (
+    bootstrapOpen !== null && (step === "details" || step === "password") ? (
       <button
         type="button"
         onClick={() => {
