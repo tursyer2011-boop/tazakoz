@@ -252,3 +252,113 @@ export const claimFirstAdmin = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+const RecoverRequestInput = z.object({ email: z.string().trim().email().max(200) });
+const RecoverVerifyInput = z.object({
+  email: z.string().trim().email().max(200),
+  code: z.string().regex(/^\d{6}$/),
+});
+
+/** Находит аккаунт действующего (не истёкшего) администратора по почте. */
+async function findActiveAdminByEmail(supabaseAdmin: any, email: string): Promise<string | null> {
+  const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  const user = list?.users.find((u: { email?: string }) => (u.email ?? "").toLowerCase() === email);
+  if (!user) return null;
+  const { data: role } = await supabaseAdmin
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!role) return null;
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("admin_permanent, admin_expires_at")
+    .eq("id", user.id)
+    .maybeSingle();
+  const exp = profile?.admin_expires_at ? new Date(profile.admin_expires_at).getTime() : null;
+  if (!profile?.admin_permanent && exp !== null && exp < Date.now()) return null;
+  return user.id;
+}
+
+/** «Я действующий админ»: код на почту администратора для восстановления входа. */
+export const requestAdminRecovery = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => RecoverRequestInput.parse(data))
+  .handler(async ({ data }) => {
+    const email = data.email.toLowerCase();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { hashOtp, randomOtp } = await import("@/lib/otp.server");
+    const { sendOtpEmail } = await import("@/lib/email.server");
+
+    const userId = await findActiveAdminByEmail(supabaseAdmin, email);
+    // Ответ одинаковый, чтобы по странице нельзя было узнать почты админов.
+    if (!userId) return { sent: true };
+
+    const { data: last } = await supabaseAdmin
+      .from("email_otps")
+      .select("created_at")
+      .eq("email", email)
+      .eq("purpose", "admin_recovery")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (last && Date.now() - new Date(last.created_at).getTime() < 30_000) {
+      throw new Error("Код уже отправлен. Повторите через несколько секунд.");
+    }
+    await supabaseAdmin
+      .from("email_otps")
+      .update({ consumed_at: new Date().toISOString() })
+      .eq("email", email)
+      .eq("purpose", "admin_recovery")
+      .is("consumed_at", null);
+
+    const code = randomOtp();
+    const { error } = await supabaseAdmin.from("email_otps").insert({
+      user_id: userId,
+      email,
+      purpose: "admin_recovery",
+      code_hash: hashOtp(code, `recovery:${email}`),
+      expires_at: new Date(Date.now() + TTL_MINUTES * 60_000).toISOString(),
+    });
+    if (error) throw new Error(error.message);
+    const sent = await sendOtpEmail(email, code, "admin");
+    if (!sent.sent) throw new Error(sent.error ?? "Не удалось отправить письмо");
+    return { sent: true };
+  });
+
+export const verifyAdminRecovery = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => RecoverVerifyInput.parse(data))
+  .handler(async ({ data }) => {
+    const email = data.email.toLowerCase();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { hashOtp } = await import("@/lib/otp.server");
+
+    const { data: record } = await supabaseAdmin
+      .from("email_otps")
+      .select("*")
+      .eq("email", email)
+      .eq("purpose", "admin_recovery")
+      .is("consumed_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!record) throw new Error("Код не найден. Запросите новый.");
+    if (new Date(record.expires_at).getTime() < Date.now()) throw new Error("Срок действия кода истёк.");
+    if (record.attempts >= 5) throw new Error("Слишком много попыток. Запросите новый код.");
+    if (record.code_hash !== hashOtp(data.code, `recovery:${email}`)) {
+      await supabaseAdmin.from("email_otps").update({ attempts: record.attempts + 1 }).eq("id", record.id);
+      throw new Error("Неверный код");
+    }
+    await supabaseAdmin.from("email_otps").update({ consumed_at: new Date().toISOString() }).eq("id", record.id);
+
+    const userId = await findActiveAdminByEmail(supabaseAdmin, email);
+    if (!userId) throw new Error("Этот аккаунт больше не администратор");
+    await supabaseAdmin
+      .from("profiles")
+      .update({ email_verified_at: new Date().toISOString() })
+      .eq("id", userId);
+
+    const { data: link, error } = await supabaseAdmin.auth.admin.generateLink({ type: "magiclink", email });
+    if (error) throw new Error(error.message);
+    return { otp: link.properties?.email_otp ?? "" };
+  });

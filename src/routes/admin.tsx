@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { CheckCircle2, KeyRound, LoaderCircle, Lock, MailCheck, ShieldCheck } from "lucide-react";
+import { CheckCircle2, CircleHelp, KeyRound, LoaderCircle, Lock, MailCheck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { activateAdminAccess, claimFirstAdmin, getAdminGateStatus, requestAdminAccess } from "@/lib/admin-access.functions";
+import { activateAdminAccess, claimFirstAdmin, getAdminGateStatus, requestAdminAccess, requestAdminRecovery, verifyAdminRecovery } from "@/lib/admin-access.functions";
 import { loadRegions, loadSettlements, searchSettlements, type KzRegion, type Settlement } from "@/lib/geo";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/admin")({
   component: AdminGate,
 });
 
-type Step = "password" | "details" | "code" | "done";
+type Step = "password" | "details" | "code" | "done" | "recover" | "recoverCode";
 
 function AdminGate() {
   const navigate = useNavigate();
@@ -35,6 +35,9 @@ function AdminGate() {
 
   const gateStatus = useServerFn(getAdminGateStatus);
   const claimAdmin = useServerFn(claimFirstAdmin);
+  const recoverRequest = useServerFn(requestAdminRecovery);
+  const recoverVerify = useServerFn(verifyAdminRecovery);
+  const [recovered, setRecovered] = useState(false);
   const [bootstrapOpen, setBootstrapOpen] = useState<boolean | null>(null);
   const [sessionEmail, setSessionEmail] = useState("");
   const [step, setStep] = useState<Step>("password");
@@ -123,6 +126,54 @@ function AdminGate() {
       setBusy(false);
     }
   }
+
+  async function sendRecovery() {
+    if (!email.includes("@")) {
+      toast.error("Введите почту администратора");
+      return;
+    }
+    setBusy(true);
+    try {
+      await recoverRequest({ data: { email } });
+      toast.success("Если это почта действующего админа, код уже отправлен");
+      setCode("");
+      setStep("recoverCode");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Ошибка");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmRecovery() {
+    setBusy(true);
+    try {
+      const result = await recoverVerify({ data: { email, code } });
+      const { error } = await supabase.auth.verifyOtp({ email, token: result.otp, type: "magiclink" });
+      if (error) throw new Error(error.message);
+      setRecovered(true);
+      setStep("done");
+      setTimeout(() => void navigate({ to: "/admin-panel" }), 1600);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Ошибка");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const recoveryLink =
+    bootstrapOpen !== null && (step === "details" || step === "password") ? (
+      <button
+        type="button"
+        onClick={() => {
+          setCode("");
+          setStep("recover");
+        }}
+        className="mt-4 inline-flex w-full items-center justify-center gap-1.5 text-sm font-medium text-primary"
+      >
+        <CircleHelp className="size-4" /> Действующий админ?
+      </button>
+    ) : null;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-5 py-10">
@@ -289,16 +340,59 @@ function AdminGate() {
           </div>
         )}
 
+        {bootstrapOpen !== null && step === "recover" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-primary">
+              <CircleHelp className="size-5" />
+              <span className="text-sm font-semibold tracking-wide uppercase">Восстановление доступа</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Чтобы восстановить доступ, напишите почту.</p>
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@tazakoz.online" />
+            <Button className="w-full" onClick={sendRecovery} disabled={busy}>
+              {busy ? <LoaderCircle className="size-4 animate-spin" /> : "Получить код"}
+            </Button>
+            <button type="button" onClick={() => setStep(bootstrapOpen ? "password" : "details")} className="w-full text-center text-xs text-muted-foreground underline">
+              Назад
+            </button>
+          </div>
+        )}
+
+        {bootstrapOpen !== null && step === "recoverCode" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-primary">
+              <MailCheck className="size-5" />
+              <span className="text-sm font-semibold tracking-wide uppercase">Код с почты</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Введите код из письма на {email}. Он действует 10 минут.</p>
+            <Input
+              inputMode="numeric"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="text-center text-2xl tracking-[0.6em]"
+              placeholder="000000"
+            />
+            <Button className="w-full" onClick={confirmRecovery} disabled={busy || code.length !== 6}>
+              {busy ? <LoaderCircle className="size-4 animate-spin" /> : "Войти как админ"}
+            </Button>
+            <button type="button" onClick={sendRecovery} className="w-full text-center text-xs text-muted-foreground underline">
+              Отправить код ещё раз
+            </button>
+          </div>
+        )}
+
+        {recoveryLink}
+
         {step === "done" && (
           <div className="flex flex-col items-center gap-4 py-8 text-center">
             <span className="bg-brand-gradient shadow-brand-glow flex size-20 animate-[ping_1.4s_ease-out_1] items-center justify-center rounded-full">
               <CheckCircle2 className="size-10 text-primary-foreground" />
             </span>
             <p className="text-lg font-semibold text-foreground">
-              {bootstrapOpen ? "Вы — постоянный администратор" : "Доступ выдан на 30 дней"}
+              {recovered ? "С возвращением, админ" : bootstrapOpen ? "Вы — постоянный администратор" : "Доступ выдан на 30 дней"}
             </p>
             <p className="text-sm text-muted-foreground">
-              {region} · {city}. Открываем панель контролёра…
+              {recovered ? "" : `${region} · ${city}. `}Открываем панель контролёра…
             </p>
           </div>
         )}
