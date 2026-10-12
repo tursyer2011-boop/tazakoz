@@ -291,8 +291,7 @@ export const requestAdminRecovery = createServerFn({ method: "POST" })
     const { sendOtpEmail } = await import("@/lib/email.server");
 
     const userId = await findActiveAdminByEmail(supabaseAdmin, email);
-    // Ответ одинаковый, чтобы по странице нельзя было узнать почты админов.
-    if (!userId) return { sent: true };
+    if (!userId) throw new Error("Вы не админ. Эта почта не принадлежит действующему администратору.");
 
     const { data: last } = await supabaseAdmin
       .from("email_otps")
