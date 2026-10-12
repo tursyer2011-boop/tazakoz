@@ -135,7 +135,7 @@ function AdminGate() {
     setBusy(true);
     try {
       await recoverRequest({ data: { email } });
-      toast.success("Если это почта действующего админа, код уже отправлен");
+      toast.success("Вы админ — код отправлен на почту");
       setCode("");
       setStep("recoverCode");
     } catch (error) {
@@ -346,7 +346,7 @@ function AdminGate() {
               <CircleHelp className="size-5" />
               <span className="text-sm font-semibold tracking-wide uppercase">Восстановление доступа</span>
             </div>
-            <p className="text-sm text-muted-foreground">Чтобы восстановить доступ, напишите почту.</p>
+            <p className="text-sm text-muted-foreground">Чтобы восстановить доступ, напишите почту, на которой вы админ. Если вы действующий админ — придёт код.</p>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@tazakoz.online" />
             <Button className="w-full" onClick={sendRecovery} disabled={busy}>
               {busy ? <LoaderCircle className="size-4 animate-spin" /> : "Получить код"}
