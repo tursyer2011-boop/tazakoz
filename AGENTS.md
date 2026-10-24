@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Lite version for old Safari (iOS 6) lives in server routes under src/routes/lite/* rendering plain HTML via src/lib/lite.server.ts (cookie session, CSRF); complaint logic is shared in src/lib/report-core.server.ts — why: old WebKit cannot run the React app, and both versions must apply identical anti-fraud and reward rules.
+- Modern maps share Map2Gis with dynamically loaded MapGL and reconciled HTML markers; weather uses an authenticated cached server function at a fixed regional location — why: preserve interactions and live team movement without exposing server credentials or requesting weather outside the service region.
