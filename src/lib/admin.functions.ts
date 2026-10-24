@@ -47,14 +47,10 @@ export const getAdminOverview = createServerFn({ method: "POST" })
 
     const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id, role");
 
-    // Администраторы и модераторы не считаются участниками (как и в рейтинге).
-    const staffIds = new Set(
-      (roles ?? []).filter((r) => r.role === "admin" || r.role === "moderator").map((r) => r.user_id),
-    );
-
     return {
       stats: {
-        users: Math.max(0, (users.count ?? 0) - staffIds.size),
+        // Считаем всех зарегистрированных, как в реестре «Люди», чтобы числа совпадали.
+        users: users.count ?? 0,
         reports: reports.count ?? 0,
         resolved: resolved.count ?? 0,
         pendingApplications: pendingApps.count ?? 0,
