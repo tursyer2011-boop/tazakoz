@@ -99,6 +99,7 @@
   --severity-medium: oklch(0.78 0.16 80);
   --severity-high: oklch(0.6 0.22 25);
   --water: oklch(0.56 0.24 262);
+  --weather-icon: oklch(0.75 0.18 70);
   --gradient-brand: linear-gradient(110deg, oklch(0.68 0.17 232), oklch(0.56 0.24 262));
   --gradient-surface: linear-gradient(160deg, oklch(1 0 0), oklch(0.98 0.01 240));
   --glow-brand: 0 10px 26px -10px oklch(0.56 0.24 262 / 0.55);
@@ -107,6 +108,7 @@
 
 @theme inline {
   --color-water: var(--water);
+  --color-weather-icon: var(--weather-icon);
   --color-severity-low: var(--severity-low);
   --color-severity-medium: var(--severity-medium);
   --color-severity-high: var(--severity-high);
@@ -270,3 +272,12 @@
   border: 2px solid var(--color-foreground);
   box-shadow: 0 0 16px 2px oklch(0.62 0.19 258 / 0.8);
 }
+
+.map-weather { background: var(--card); box-shadow: var(--glow-soft); }
+.map-weather svg { width: 28px; height: 28px; }
+.gis-pin { display: block; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--card); cursor: pointer; background: var(--primary); box-shadow: 0 1px 5px var(--border); }
+.gis-pin-depot { width: 14px; height: 14px; margin: 3px; }
+.gis-pin-team { background: var(--accent); border-color: var(--foreground); }
+.gis-pin-low { background: var(--severity-low); }
+.gis-pin-medium { background: var(--severity-medium); }
+.gis-pin-high { background: var(--severity-high); }
