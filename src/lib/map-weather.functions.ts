@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { MAP_WEATHER_LOCATION } from "@/lib/map-weather-location";
 
 export const getMapKey = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -21,7 +22,7 @@ export const getMapWeather = createServerFn({ method: "GET" })
     const connectionKey = process.env['GOOGLE_MAPS_API_KEY'];
     if (!gatewayKey || !connectionKey) throw new Error("Сервис погоды не подключён");
     // Fixed Aktau location: never follows the map outside Mangystau.
-    const response = await fetch("https://connector-gateway.lovable.dev/google_maps/weather/v1/currentConditions:lookup?location.latitude=43.6512&location.longitude=51.1575&unitsSystem=METRIC&languageCode=ru", {
+    const response = await fetch(`https://connector-gateway.lovable.dev/google_maps/weather/v1/currentConditions:lookup?location.latitude=${MAP_WEATHER_LOCATION.lat}&location.longitude=${MAP_WEATHER_LOCATION.lng}&unitsSystem=METRIC&languageCode=ru`, {
       headers: { Authorization: `Bearer ${gatewayKey}`, 'X-Connection-Api-Key': connectionKey },
     });
     if (!response.ok) {
