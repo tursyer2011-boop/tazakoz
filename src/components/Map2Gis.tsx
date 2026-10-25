@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getMapKey } from "@/lib/map-weather.functions";
 import { MapWeather } from "@/components/MapWeather";
+import { cn } from "@/lib/utils";
 import type { Map as GisMap, HtmlMarker } from "@2gis/mapgl/types";
 
 export type GisPin = { id: string; lat: number; lng: number; kind: "depot" | "team" | "low" | "medium" | "high"; label: string; onClick?: () => void };
@@ -71,5 +72,12 @@ export function Map2Gis({ center, zoom = 7, pins, className, onAreaClick, onRead
       if (!seen.has(id)) { entry.marker.destroy(); markers.current.delete(id); }
     }
   }, [pins, ready]);
-  return <div className={`relative ${className ?? ""}`}><div ref={container} className="absolute inset-0" />{error && <p role="alert" className="absolute inset-x-4 top-44 z-[500] rounded-lg bg-card p-3 text-sm text-destructive">Не удалось открыть 2ГИС. Проверьте доступ к сервису карты.</p>}<MapWeather /></div>;
+  useEffect(() => {
+    const element = container.current;
+    if (!ready || !element) return;
+    const observer = new ResizeObserver(() => mapRef.current?.invalidateSize());
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ready]);
+  return <div className={cn("relative", className)}><div ref={container} className="absolute inset-0" />{error && <p role="alert" className="absolute inset-x-4 top-44 z-[500] rounded-lg bg-card p-3 text-sm text-destructive">Не удалось открыть 2ГИС. Проверьте доступ к сервису карты.</p>}<MapWeather /></div>;
 }

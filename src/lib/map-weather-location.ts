@@ -1,0 +1,1 @@
+export const MAP_WEATHER_LOCATION = { region: "Мангистауская область", city: "Ақтау", lat: 43.6512, lng: 51.1575 } as const;

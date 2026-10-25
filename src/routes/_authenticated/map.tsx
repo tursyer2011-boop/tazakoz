@@ -170,7 +170,7 @@ function MapPage() {
   }
 
   return (
-    <div className="relative h-[calc(100vh-5rem)]">
+    <div className="relative h-[calc(100dvh-9.5rem)] min-h-80">
       <Map2Gis className="absolute inset-0" center={KZ_CENTER} zoom={7} pins={pins} onAreaClick={setArea} onReady={(map) => { mapRef.current = map; }} />
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] space-y-3 bg-gradient-to-b from-background via-background/80 to-transparent px-4 pt-4 pb-8">
