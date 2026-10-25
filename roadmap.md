@@ -1,3 +1,3 @@
-- [ ] Replace map basemap with 2GIS while retaining map interactions.
-- [ ] Add compact Mangystau weather indicator at bottom left.
+- [x] Replace map basemap with 2GIS while retaining map interactions.
+- [x] Add compact Mangystau weather indicator at bottom left.
 - [ ] Verify map and weather with an authenticated session.
