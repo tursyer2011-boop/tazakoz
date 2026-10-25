@@ -11,6 +11,7 @@ import { KZ_CENTER, SEVERITY, STATUS_LABELS, type Severity } from "@/lib/regions
 import { loadRegions } from "@/lib/geo";
 import { getAreaReports, getLiveTeams } from "@/lib/community.functions";
 import { Logo } from "@/components/Logo";
+import { Map2Gis, type GisPin } from "@/components/Map2Gis";
 import { PointQr } from "@/components/PointQr";
 import { QrScanner } from "@/components/QrScanner";
 import { DepotCleanupsButton } from "@/components/DepotCleanups";
@@ -87,13 +88,7 @@ function MapPage() {
   const [area, setArea] = useState<{ lat: number; lng: number } | null>(null);
   const [point, setPoint] = useState<Depot | null>(null);
   const [scanning, setScanning] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<import("leaflet").Map | null>(null);
-  const pointLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
-  const reportLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
-  const workerLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
-  const teamMarkersRef = useRef(new Map<string, import("leaflet").Marker>());
-  const [ready, setReady] = useState(false);
+  const mapRef = useRef<import("@2gis/mapgl/types").Map | null>(null);
 
   const areaFn = useServerFn(getAreaReports);
   const teamsFn = useServerFn(getLiveTeams);
@@ -107,7 +102,7 @@ function MapPage() {
   });
   const { data: areaReports = [], isLoading: areaLoading } = useQuery({
     queryKey: ["area-reports", area?.lat, area?.lng],
-    queryFn: () => areaFn({ data: { lat: area!.lat, lng: area!.lng, radiusM: 1200 } }),
+    queryFn: () => area ? areaFn({ data: { lat: area.lat, lng: area.lng, radiusM: 1200 } }) : Promise.resolve([]),
     enabled: !!area,
   });
 
@@ -137,143 +132,17 @@ function MapPage() {
     [reports, region, status],
   );
 
-  // ---- map bootstrap -------------------------------------------------------
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const L = await import("leaflet");
-      await import("leaflet/dist/leaflet.css");
-      if (cancelled || !containerRef.current || mapRef.current) return;
-      const map = L.map(containerRef.current, { zoomControl: false, attributionControl: true }).setView(
-        [KZ_CENTER.lat, KZ_CENTER.lng],
-        5,
-      );
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap",
-        maxZoom: 18,
-      }).addTo(map);
-      L.control.zoom({ position: "bottomright" }).addTo(map);
-      mapRef.current = map;
-      pointLayerRef.current = L.layerGroup().addTo(map);
-      workerLayerRef.current = L.layerGroup().addTo(map);
-      reportLayerRef.current = L.layerGroup().addTo(map);
-      setReady(true);
-    })();
-    return () => {
-      cancelled = true;
-      mapRef.current?.remove();
-      mapRef.current = null;
-    };
-  }, []);
-
-  // ---- TAZA KÖZ points -----------------------------------------------------
-  useEffect(() => {
-    if (!ready) return;
-    let cancelled = false;
-    void (async () => {
-      const L = await import("leaflet");
-      const layer = pointLayerRef.current;
-      if (cancelled || !layer) return;
-      layer.clearLayers();
-      for (const d of visibleDepots) {
-        const marker = L.circleMarker([d.lat, d.lng], {
-          radius: 5,
-          color: "var(--primary)",
-          weight: 2,
-          fillColor: "var(--primary)",
-          fillOpacity: 0.35,
-        });
-        marker.bindTooltip(`#TK-${d.code}`, { direction: "top" });
-        marker.on("click", (e) => {
-          L.DomEvent.stopPropagation(e);
-          setPoint(d);
-        });
-        marker.addTo(layer);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [visibleDepots, ready]);
-
-  // ---- reports -------------------------------------------------------------
-  useEffect(() => {
-    if (!ready) return;
-    let cancelled = false;
-    void (async () => {
-      const L = await import("leaflet");
-      const layer = reportLayerRef.current;
-      if (cancelled || !layer) return;
-      layer.clearLayers();
-      for (const r of filtered) {
-        const color = SEVERITY[(r.severity as Severity) ?? "low"]?.color ?? "var(--severity-low)";
-        const marker = L.circleMarker([r.lat, r.lng], {
-          radius: 9,
-          color,
-          weight: 2,
-          fillColor: color,
-          fillOpacity: 0.6,
-        });
-        marker.on("click", (e) => {
-          L.DomEvent.stopPropagation(e);
-          setArea({ lat: r.lat, lng: r.lng });
-        });
-        marker.addTo(layer);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [filtered, ready]);
-
-  // ---- live team positions -------------------------------------------------
-  useEffect(() => {
-    if (!ready) return;
-    let cancelled = false;
-    void (async () => {
-      const L = await import("leaflet");
-      const layer = workerLayerRef.current;
-      if (cancelled || !layer) return;
-      const icon = L.divIcon({ className: "", html: `<span class="team-pin"></span>`, iconSize: [16, 16] });
-      const seen = new Set<string>();
-      for (const t of teams) {
-        seen.add(t.team_id);
-        const existing = teamMarkersRef.current.get(t.team_id);
-        if (existing) existing.setLatLng([t.lat, t.lng]);
-        else {
-          const m = L.marker([t.lat, t.lng], { icon })
-            .bindTooltip(`Команда ${t.code} · ${t.status}`)
-            .addTo(layer);
-          teamMarkersRef.current.set(t.team_id, m);
-        }
-      }
-      for (const [id, m] of teamMarkersRef.current) {
-        if (!seen.has(id)) {
-          m.remove();
-          teamMarkersRef.current.delete(id);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [ready, teams]);
-
-  // ---- tap on area ---------------------------------------------------------
-  useEffect(() => {
-    if (!ready || !mapRef.current) return;
-    const map = mapRef.current;
-    const onClick = (e: import("leaflet").LeafletMouseEvent) => setArea({ lat: e.latlng.lat, lng: e.latlng.lng });
-    map.on("click", onClick);
-    return () => {
-      map.off("click", onClick);
-    };
-  }, [ready]);
+  const pins = useMemo<GisPin[]>(() => [
+    ...visibleDepots.map((d): GisPin => ({ id: `depot-${d.id}`, lat: d.lat, lng: d.lng, kind: "depot", label: `#TK-${d.code} · ${d.name}`, onClick: () => setPoint(d) })),
+    ...filtered.map((r): GisPin => ({ id: `report-${r.id}`, lat: r.lat, lng: r.lng, kind: r.severity === "high" ? "high" : r.severity === "medium" ? "medium" : "low", label: "Жалобы в этом районе", onClick: () => setArea({ lat: r.lat, lng: r.lng }) })),
+    ...teams.map((t): GisPin => ({ id: `team-${t.team_id}`, lat: t.lat, lng: t.lng, kind: "team", label: `Команда ${t.code} · ${t.status}`, onClick: () => toast.info(`Команда ${t.code} · ${t.status}`) })),
+  ], [visibleDepots, filtered, teams]);
 
   const focusPoint = useCallback(
     (d: Depot) => {
       setPoint(d);
-      mapRef.current?.setView([d.lat, d.lng], 14);
+      mapRef.current?.setCenter([d.lng, d.lat]);
+      mapRef.current?.setZoom(14);
     },
     [],
   );
@@ -302,7 +171,7 @@ function MapPage() {
 
   return (
     <div className="relative h-[calc(100vh-5rem)]">
-      <div ref={containerRef} className="absolute inset-0" />
+      <Map2Gis className="absolute inset-0" center={KZ_CENTER} zoom={7} pins={pins} onAreaClick={setArea} onReady={(map) => { mapRef.current = map; }} />
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] space-y-3 bg-gradient-to-b from-background via-background/80 to-transparent px-4 pt-4 pb-8">
         <div className="pointer-events-auto flex items-center justify-center gap-2">
@@ -445,11 +314,3 @@ function MapPage() {
   );
 }
 
-function pickRandom<T>(items: T[], count: number): T[] {
-  const copy = [...items];
-  const out: T[] = [];
-  while (out.length < count && copy.length) {
-    out.push(copy.splice(Math.floor(Math.random() * copy.length), 1)[0]!);
-  }
-  return out;
-}
