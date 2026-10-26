@@ -8,6 +8,13 @@
       "when": 1790246849799,
       "tag": "0000_tighten_depots_teams_report_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793003417313,
+      "tag": "0001_create_tizi_chat_tables",
+      "breakpoints": true
     }
   ]
 }
