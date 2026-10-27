@@ -33,6 +33,7 @@ import { Route as LiteProfileRouteImport } from './routes/lite/profile'
 import { Route as LiteRatingRouteImport } from './routes/lite/rating'
 import { Route as LiteReportRouteImport } from './routes/lite/report'
 import { Route as AuthenticatedTiziIndexRouteImport } from './routes/_authenticated/tizi/index'
+import { Route as AuthenticatedTiziThreadIdRouteImport } from './routes/_authenticated/tizi/$threadId'
 import { Route as ApiTiziChatRouteImport } from './routes/api/tizi/chat'
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
 
@@ -155,6 +156,12 @@ const AuthenticatedTiziIndexRoute = AuthenticatedTiziIndexRouteImport.update({
   path: '/tizi/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTiziThreadIdRoute =
+  AuthenticatedTiziThreadIdRouteImport.update({
+    id: '/tizi/$threadId',
+    path: '/tizi/$threadId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiTiziChatRoute = ApiTiziChatRouteImport.update({
   id: '/api/tizi/chat',
   path: '/api/tizi/chat',
@@ -190,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/lite/report': typeof LiteReportRoute
   '/auth/': typeof AuthIndexRoute
   '/lite/': typeof LiteIndexRoute
+  '/tizi/$threadId': typeof AuthenticatedTiziThreadIdRoute
   '/api/tizi/chat': typeof ApiTiziChatRoute
   '/tizi/': typeof AuthenticatedTiziIndexRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
@@ -217,6 +225,7 @@ export interface FileRoutesByTo {
   '/lite/report': typeof LiteReportRoute
   '/auth': typeof AuthIndexRoute
   '/lite': typeof LiteIndexRoute
+  '/tizi/$threadId': typeof AuthenticatedTiziThreadIdRoute
   '/api/tizi/chat': typeof ApiTiziChatRoute
   '/tizi': typeof AuthenticatedTiziIndexRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
@@ -246,6 +255,7 @@ export interface FileRoutesById {
   '/lite/report': typeof LiteReportRoute
   '/auth/': typeof AuthIndexRoute
   '/lite/': typeof LiteIndexRoute
+  '/_authenticated/tizi/$threadId': typeof AuthenticatedTiziThreadIdRoute
   '/api/tizi/chat': typeof ApiTiziChatRoute
   '/_authenticated/tizi/': typeof AuthenticatedTiziIndexRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
     | '/lite/report'
     | '/auth/'
     | '/lite/'
+    | '/tizi/$threadId'
     | '/api/tizi/chat'
     | '/tizi/'
     | '/api/public/telegram/webhook'
@@ -302,6 +313,7 @@ export interface FileRouteTypes {
     | '/lite/report'
     | '/auth'
     | '/lite'
+    | '/tizi/$threadId'
     | '/api/tizi/chat'
     | '/tizi'
     | '/api/public/telegram/webhook'
@@ -330,6 +342,7 @@ export interface FileRouteTypes {
     | '/lite/report'
     | '/auth/'
     | '/lite/'
+    | '/_authenticated/tizi/$threadId'
     | '/api/tizi/chat'
     | '/_authenticated/tizi/'
     | '/api/public/telegram/webhook'
@@ -524,6 +537,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTiziIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tizi/$threadId': {
+      id: '/_authenticated/tizi/$threadId'
+      path: '/tizi/$threadId'
+      fullPath: '/tizi/$threadId'
+      preLoaderRoute: typeof AuthenticatedTiziThreadIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/tizi/chat': {
       id: '/api/tizi/chat'
       path: '/api/tizi/chat'
@@ -551,6 +571,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportRoute: typeof AuthenticatedReportRoute
   AuthenticatedWaterRoute: typeof AuthenticatedWaterRoute
   AuthenticatedWorkerRoute: typeof AuthenticatedWorkerRoute
+  AuthenticatedTiziThreadIdRoute: typeof AuthenticatedTiziThreadIdRoute
   AuthenticatedTiziIndexRoute: typeof AuthenticatedTiziIndexRoute
 }
 
@@ -564,6 +585,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReportRoute: AuthenticatedReportRoute,
   AuthenticatedWaterRoute: AuthenticatedWaterRoute,
   AuthenticatedWorkerRoute: AuthenticatedWorkerRoute,
+  AuthenticatedTiziThreadIdRoute: AuthenticatedTiziThreadIdRoute,
   AuthenticatedTiziIndexRoute: AuthenticatedTiziIndexRoute,
 }
 
