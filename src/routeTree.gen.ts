@@ -32,6 +32,8 @@ import { Route as LiteLogoutRouteImport } from './routes/lite/logout'
 import { Route as LiteProfileRouteImport } from './routes/lite/profile'
 import { Route as LiteRatingRouteImport } from './routes/lite/rating'
 import { Route as LiteReportRouteImport } from './routes/lite/report'
+import { Route as AuthenticatedTiziIndexRouteImport } from './routes/_authenticated/tizi/index'
+import { Route as ApiTiziChatRouteImport } from './routes/api/tizi/chat'
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -148,6 +150,16 @@ const LiteReportRoute = LiteReportRouteImport.update({
   path: '/lite/report',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTiziIndexRoute = AuthenticatedTiziIndexRouteImport.update({
+  id: '/tizi/',
+  path: '/tizi/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiTiziChatRoute = ApiTiziChatRouteImport.update({
+  id: '/api/tizi/chat',
+  path: '/api/tizi/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicTelegramWebhookRoute =
   ApiPublicTelegramWebhookRouteImport.update({
     id: '/api/public/telegram/webhook',
@@ -178,6 +190,8 @@ export interface FileRoutesByFullPath {
   '/lite/report': typeof LiteReportRoute
   '/auth/': typeof AuthIndexRoute
   '/lite/': typeof LiteIndexRoute
+  '/api/tizi/chat': typeof ApiTiziChatRoute
+  '/tizi/': typeof AuthenticatedTiziIndexRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -203,6 +217,8 @@ export interface FileRoutesByTo {
   '/lite/report': typeof LiteReportRoute
   '/auth': typeof AuthIndexRoute
   '/lite': typeof LiteIndexRoute
+  '/api/tizi/chat': typeof ApiTiziChatRoute
+  '/tizi': typeof AuthenticatedTiziIndexRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRoutesById {
@@ -230,6 +246,8 @@ export interface FileRoutesById {
   '/lite/report': typeof LiteReportRoute
   '/auth/': typeof AuthIndexRoute
   '/lite/': typeof LiteIndexRoute
+  '/api/tizi/chat': typeof ApiTiziChatRoute
+  '/_authenticated/tizi/': typeof AuthenticatedTiziIndexRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRouteTypes {
@@ -257,6 +275,8 @@ export interface FileRouteTypes {
     | '/lite/report'
     | '/auth/'
     | '/lite/'
+    | '/api/tizi/chat'
+    | '/tizi/'
     | '/api/public/telegram/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -282,6 +302,8 @@ export interface FileRouteTypes {
     | '/lite/report'
     | '/auth'
     | '/lite'
+    | '/api/tizi/chat'
+    | '/tizi'
     | '/api/public/telegram/webhook'
   id:
     | '__root__'
@@ -308,6 +330,8 @@ export interface FileRouteTypes {
     | '/lite/report'
     | '/auth/'
     | '/lite/'
+    | '/api/tizi/chat'
+    | '/_authenticated/tizi/'
     | '/api/public/telegram/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -326,6 +350,7 @@ export interface RootRouteChildren {
   LiteReportRoute: typeof LiteReportRoute
   AuthIndexRoute: typeof AuthIndexRoute
   LiteIndexRoute: typeof LiteIndexRoute
+  ApiTiziChatRoute: typeof ApiTiziChatRoute
   ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
 }
 
@@ -492,6 +517,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiteReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/tizi/': {
+      id: '/_authenticated/tizi/'
+      path: '/tizi'
+      fullPath: '/tizi/'
+      preLoaderRoute: typeof AuthenticatedTiziIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/tizi/chat': {
+      id: '/api/tizi/chat'
+      path: '/api/tizi/chat'
+      fullPath: '/api/tizi/chat'
+      preLoaderRoute: typeof ApiTiziChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/telegram/webhook': {
       id: '/api/public/telegram/webhook'
       path: '/api/public/telegram/webhook'
@@ -512,6 +551,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportRoute: typeof AuthenticatedReportRoute
   AuthenticatedWaterRoute: typeof AuthenticatedWaterRoute
   AuthenticatedWorkerRoute: typeof AuthenticatedWorkerRoute
+  AuthenticatedTiziIndexRoute: typeof AuthenticatedTiziIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -524,6 +564,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReportRoute: AuthenticatedReportRoute,
   AuthenticatedWaterRoute: AuthenticatedWaterRoute,
   AuthenticatedWorkerRoute: AuthenticatedWorkerRoute,
+  AuthenticatedTiziIndexRoute: AuthenticatedTiziIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -544,6 +585,7 @@ const rootRouteChildren: RootRouteChildren = {
   LiteReportRoute: LiteReportRoute,
   AuthIndexRoute: AuthIndexRoute,
   LiteIndexRoute: LiteIndexRoute,
+  ApiTiziChatRoute: ApiTiziChatRoute,
   ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
 }
 export const routeTree = rootRouteImport
