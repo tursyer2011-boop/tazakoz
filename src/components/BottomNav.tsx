@@ -16,6 +16,7 @@ const staffItems = [
   { to: "/tizi", label: "Тизи", tizi: true },
   { to: "/report", label: "Жалоба", icon: Camera, center: true },
   { to: "/admin-panel", label: "Панель", icon: ShieldCheck },
+  { to: "/water", label: "Вода", icon: Droplets },
   { to: "/profile", label: "Профиль", icon: User },
 ] as const;
 
@@ -24,6 +25,7 @@ const workerItems = [
   { to: "/tizi", label: "Тизи", tizi: true },
   { to: "/worker", label: "Отчёт", icon: ClipboardCheck, center: true },
   { to: "/worker", label: "Задания", icon: HardHat },
+  { to: "/market", label: "Маркет", icon: ShoppingBag },
   { to: "/profile", label: "Профиль", icon: User },
 ] as const;
 
