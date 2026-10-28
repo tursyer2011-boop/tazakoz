@@ -25,7 +25,7 @@ export function AdminTiziChats() {
 
   const { data: messages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ["admin-tizi-messages", openId],
-    queryFn: () => (openId ? messagesFn({ data: { threadId: openId } }) : Promise.resolve([])),
+    queryFn: (): Promise<TiziMessage[]> => (openId ? messagesFn({ data: { threadId: openId } }) : Promise.resolve([])),
     enabled: !!openId,
   });
 

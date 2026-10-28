@@ -1,6 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from "ai";
 import { z } from "zod";
+import type { Json } from "@/integrations/supabase/types";
 import {
   createLovableAiGatewayRunIdFetch,
   getLovableAiGatewayRunId,
@@ -171,7 +172,7 @@ export async function handleTiziChat(request: Request): Promise<Response> {
     thread_id: threadId,
     user_id: userId,
     role: "user",
-    parts: lastUser.parts,
+    parts: lastUser.parts as unknown as Json,
   });
   if (insertError) return Response.json({ error: "Не удалось сохранить сообщение" }, { status: 500 });
 
@@ -230,7 +231,7 @@ export async function handleTiziChat(request: Request): Promise<Response> {
         thread_id: threadId,
         user_id: userId,
         role: "assistant",
-        parts: responseMessage.parts,
+        parts: responseMessage.parts as unknown as Json,
       });
       if (error) console.error("tizi: failed to save assistant message", error.message);
     },

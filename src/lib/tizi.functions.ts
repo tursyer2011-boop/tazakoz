@@ -11,7 +11,8 @@ export type TiziThread = {
 export type TiziMessage = {
   id: string;
   role: "user" | "assistant";
-  parts: unknown[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  parts: any[];
   created_at: string;
 };
 
