@@ -10,6 +10,7 @@ import { adjustCredits, getAdminOverview, getEmailDiagnostics, inviteAdmin, list
 import { reviewApplication } from "@/lib/worker.functions";
 import { getAdminScope, getTeamActivity, grantTeamCredits } from "@/lib/ops.functions";
 import { OpsMap } from "@/components/OpsMap";
+import { AdminTiziChats } from "@/components/AdminTiziChats";
 import { CreditTransferDialog } from "@/components/CreditTransferDialog";
 import { APPLICATION_STATUS_LABELS } from "@/lib/credits";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,7 @@ function AdminPage() {
           <TabsTrigger value="invites" disabled={!isAdmin}>
             Админы
           </TabsTrigger>
+          <TabsTrigger value="tizi">Тизи</TabsTrigger>
         </TabsList>
         <TabsContent value="map" className="mt-4">
           {isAdmin ? <RegionMap /> : null}
@@ -103,6 +105,9 @@ function AdminPage() {
         </TabsContent>
         <TabsContent value="invites" className="mt-4">
           {isAdmin ? <AdminInvites /> : null}
+        </TabsContent>
+        <TabsContent value="tizi" className="mt-4">
+          <AdminTiziChats />
         </TabsContent>
 
       </Tabs>
