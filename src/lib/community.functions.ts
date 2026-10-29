@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { hasRole } from "@/lib/roles";
+import { canReadReport } from "@/lib/report-access";
 
 function distM(aLat: number, aLng: number, bLat: number, bLng: number) {
   const R = 6371000;
@@ -29,7 +30,7 @@ export const getAreaReports = createServerFn({ method: "POST" })
     const dLng = data.radiusM / (111000 * Math.cos((data.lat * Math.PI) / 180));
     const { data: rows, error } = await db
       .from("reports")
-      .select("id, user_id, photo_url, comment, address, severity, status, lat, lng, created_at")
+      .select("id, user_id, assigned_worker_id, photo_url, comment, address, severity, status, lat, lng, created_at")
       .gte("lat", data.lat - dLat)
       .lte("lat", data.lat + dLat)
       .gte("lng", data.lng - dLng)
@@ -37,7 +38,12 @@ export const getAreaReports = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(60);
     if (error) throw new Error(error.message);
+    const { data: roleRows, error: roleError } = await db.from("user_roles")
+      .select("role").eq("user_id", context.userId);
+    if (roleError) throw new Error(roleError.message);
+    const roles = (roleRows ?? []).map(r => r.role);
     const list = (rows ?? [])
+      .filter(r => canReadReport(r, context.userId, roles))
       .filter((r) => distM(data.lat, data.lng, r.lat, r.lng) <= data.radiusM)
       .slice(0, 30);
     const ids = Array.from(new Set(list.map((r) => r.user_id)));
