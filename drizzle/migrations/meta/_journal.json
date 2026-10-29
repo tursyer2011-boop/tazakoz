@@ -15,6 +15,13 @@
       "when": 1793003417313,
       "tag": "0001_create_tizi_chat_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793245789809,
+      "tag": "0002_private_reports_and_volunteer_notifications",
+      "breakpoints": true
     }
   ]
 }

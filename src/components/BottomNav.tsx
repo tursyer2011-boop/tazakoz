@@ -1,11 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Camera, ClipboardCheck, Droplets, HardHat, Home, ShieldCheck, ShoppingBag, Trophy, User } from "lucide-react";
 import { hasRole, useProfile } from "@/hooks/useProfile";
-import tiziAvatar from "@/assets/tizi-avatar.png";
 
 const baseItems = [
   { to: "/map", label: "Главная", icon: Home },
-  { to: "/tizi", label: "Тизи", tizi: true },
+  { to: "/rating", label: "Рейтинг", icon: Trophy },
   { to: "/report", label: "Жалоба", icon: Camera, center: true },
   { to: "/market", label: "Маркет", icon: ShoppingBag },
   { to: "/profile", label: "Профиль", icon: User },
@@ -13,7 +12,7 @@ const baseItems = [
 
 const staffItems = [
   { to: "/map", label: "Главная", icon: Home },
-  { to: "/tizi", label: "Тизи", tizi: true },
+  { to: "/rating", label: "Рейтинг", icon: Trophy },
   { to: "/report", label: "Жалоба", icon: Camera, center: true },
   { to: "/admin-panel", label: "Панель", icon: ShieldCheck },
   { to: "/water", label: "Вода", icon: Droplets },
@@ -22,7 +21,7 @@ const staffItems = [
 
 const workerItems = [
   { to: "/map", label: "Главная", icon: Home },
-  { to: "/tizi", label: "Тизи", tizi: true },
+  { to: "/rating", label: "Рейтинг", icon: Trophy },
   { to: "/worker", label: "Отчёт", icon: ClipboardCheck, center: true },
   { to: "/worker", label: "Задания", icon: HardHat },
   { to: "/market", label: "Маркет", icon: ShoppingBag },
@@ -43,9 +42,8 @@ export function BottomNav() {
     <nav className="fixed inset-x-0 bottom-0 z-[1000] border-t border-border bg-card/95 backdrop-blur">
       <ul className="mx-auto flex max-w-lg items-end justify-between gap-1 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {items.map(({ to, label, ...rest }) => {
-          const active = pathname === to || (to === "/tizi" && pathname.startsWith("/tizi"));
+          const active = pathname === to;
           const center = "center" in rest && rest.center;
-          const isTizi = "tizi" in rest && rest.tizi;
           if (center && "icon" in rest) {
             const Icon = rest.icon;
             return (
@@ -65,18 +63,7 @@ export function BottomNav() {
                 to={to}
                 className={`flex w-12 flex-col items-center gap-1 py-1 ${active ? "text-primary" : "text-muted-foreground"}`}
               >
-                {isTizi ? (
-                  <img
-                    src={tiziAvatar}
-                    alt="Тизи"
-                    width={816}
-                    height={816}
-                    loading="lazy"
-                    className={`size-6 rounded-md bg-secondary object-cover ${active ? "ring-1 ring-primary" : ""}`}
-                  />
-                ) : (
-                  "icon" in rest && <rest.icon className="size-6" strokeWidth={1.6} />
-                )}
+                {"icon" in rest && <rest.icon className="size-6" strokeWidth={1.6} />}
                 <span className="text-[0.6rem]">{label}</span>
               </Link>
             </li>

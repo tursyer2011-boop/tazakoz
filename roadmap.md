@@ -1,3 +1,8 @@
 - [x] Replace map basemap with 2GIS while retaining map interactions.
 - [x] Add compact Mangystau weather indicator at bottom left.
 - [x] Verify map and weather with an authenticated session.
+- [x] Restrict resident report visibility in map, area details and lite version.
+- [x] Deliver persistent new-report notifications to volunteers (in-app inbox; browser alerts while the app is open).
+- [x] Restore rating navigation and move Tizi to the top-left header.
+- [x] Verify privacy unit tests, applied database policies/trigger, clean build and signed-out gate.
+- [ ] Verify signed-in map/navigation and real report notification delivery — blocked: no requesting-user account matched for session minting; user must sign in in preview.

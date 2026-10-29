@@ -957,6 +957,30 @@ export type Database = {
         }
         Relationships: []
       }
+      volunteer_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          read_at: string | null
+          report_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          report_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          report_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       worker_applications: {
         Row: {
           about: string
