@@ -19,7 +19,6 @@ import { APPLICATION_STATUS_LABELS, REPORT_STATUS_LABELS } from "@/lib/credits";
 import { SEVERITY, type Severity } from "@/lib/regions";
 import { ReportPhoto } from "@/components/ReportPhoto";
 import { NotifyPermissionCard } from "@/components/NotifyPermissionCard";
-import { pushNotify } from "@/lib/notify";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -464,7 +463,6 @@ function WorkerTasks({ userId }: { userId: string }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState<string[]>([]);
-  const seenIds = useRef<Set<string> | null>(null);
 
   const board = useQuery({
     queryKey: ["worker-board", userId],
@@ -495,24 +493,6 @@ function WorkerTasks({ userId }: { userId: string }) {
     toast.message("Жалоба скрыта — её примет ближайший волонтёр");
   }
 
-  // Оповещение о новых ближайших жалобах (тост + системное уведомление сайта).
-  useEffect(() => {
-    const calls = board.data?.calls;
-    if (!calls) return;
-    if (seenIds.current === null) {
-      seenIds.current = new Set(calls.map((c) => c.id));
-      return;
-    }
-    const fresh = calls.filter((c) => !seenIds.current!.has(c.id) && !c.assigned_worker_id);
-    for (const c of fresh) {
-      const where = `${c.address || c.water_body || "без адреса"}${
-        c.distanceKm != null ? ` · ${c.distanceKm.toFixed(1)} км` : ""
-      }`;
-      toast.info(`Новая жалоба рядом: ${where}`);
-      pushNotify("Новая жалоба рядом", { body: where, tag: `call-${c.id}`, url: "/worker" });
-    }
-    seenIds.current = new Set(calls.map((c) => c.id));
-  }, [board.data]);
 
   async function onTake(reportId: string) {
     setBusyId(reportId);
