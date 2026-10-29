@@ -19,35 +19,35 @@ const AreaInput = z.object({
   radiusM: z.number().int().min(100).max(5000).default(1200),
 });
 
-/** Одобренные жалобы в выбранном микрорайоне: фото и @никнейм автора. */
+/** RLS limits area details and photos to the caller's accessible reports. */
 export const getAreaReports = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => AreaInput.parse(d))
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
+    const db = context.supabase;
     const dLat = data.radiusM / 111000;
     const dLng = data.radiusM / (111000 * Math.cos((data.lat * Math.PI) / 180));
-    const { data: rows } = await supabaseAdmin
+    const { data: rows, error } = await db
       .from("reports")
       .select("id, user_id, photo_url, comment, address, severity, status, lat, lng, created_at")
-      .eq("approved", true)
       .gte("lat", data.lat - dLat)
       .lte("lat", data.lat + dLat)
       .gte("lng", data.lng - dLng)
       .lte("lng", data.lng + dLng)
       .order("created_at", { ascending: false })
       .limit(60);
+    if (error) throw new Error(error.message);
     const list = (rows ?? [])
       .filter((r) => distM(data.lat, data.lng, r.lat, r.lng) <= data.radiusM)
       .slice(0, 30);
     const ids = Array.from(new Set(list.map((r) => r.user_id)));
     const { data: profs } = ids.length
-      ? await supabaseAdmin.from("profiles").select("id, username").in("id", ids)
+      ? await db.from("profiles").select("id, username").in("id", ids)
       : { data: [] as { id: string; username: string | null }[] };
     const names = new Map((profs ?? []).map((p) => [p.id, p.username]));
     return await Promise.all(
       list.map(async (r) => {
-        const { data: s } = await supabaseAdmin.storage.from("reports").createSignedUrl(r.photo_url, 3600);
+        const { data: s } = await db.storage.from("reports").createSignedUrl(r.photo_url, 3600);
         return {
           id: r.id,
           photoUrl: s?.signedUrl ?? null,
@@ -74,7 +74,7 @@ export const getLiveTeams = createServerFn({ method: "POST" })
     const codes = new Map((teams ?? []).map((t) => [t.id, t.team_code]));
     return (pos ?? [])
       .filter((p) => codes.has(p.team_id))
-      .map((p) => ({ team_id: p.team_id, lat: p.lat, lng: p.lng, status: p.status, code: codes.get(p.team_id)! }));
+      .map((p) => ({ team_id: p.team_id, lat: p.lat, lng: p.lng, status: p.status, code: codes.get(p.team_id) ?? "" }));
   });
 
 /** Фото уборок пункта — только для волонтёров, капитанов и персонала. */

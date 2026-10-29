@@ -101,18 +101,18 @@ function MapPage() {
     refetchInterval: 10_000,
   });
   const { data: areaReports = [], isLoading: areaLoading } = useQuery({
-    queryKey: ["area-reports", area?.lat, area?.lng],
+    queryKey: ["area-reports", user?.id, me?.roles, area?.lat, area?.lng],
     queryFn: () => area ? areaFn({ data: { lat: area.lat, lng: area.lng, radiusM: 1200 } }) : Promise.resolve([]),
     enabled: !!area,
   });
 
   const { data: reports = [] } = useQuery({
-    queryKey: ["reports", "approved", "pins"],
+    queryKey: ["reports", "visible", "pins", user?.id, me?.roles],
+    enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("reports")
         .select("id, lat, lng, region, severity, status")
-        .eq("approved", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Report[];
@@ -278,7 +278,7 @@ function MapPage() {
           <div className="space-y-3 px-4 pb-6">
             {areaLoading && <div className="h-52 w-full animate-pulse rounded-2xl bg-muted" />}
             {!areaLoading && areaReports.length === 0 && (
-              <p className="text-sm text-muted-foreground">Здесь пока нет одобренных жалоб.</p>
+              <p className="text-sm text-muted-foreground">Здесь пока нет доступных вам жалоб.</p>
             )}
             {areaReports.map((r) => {
               const sev = SEVERITY[(r.severity as Severity) ?? "low"] ?? SEVERITY.low;

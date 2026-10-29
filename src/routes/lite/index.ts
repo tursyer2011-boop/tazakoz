@@ -11,10 +11,9 @@ export const Route = createFileRoute("/lite/")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const [{ data: me }, { data: reports }] = await Promise.all([
           session.supabase.from("profiles").select("full_name, credits").eq("id", session.userId).maybeSingle(),
-          supabaseAdmin
+          session.supabase
             .from("reports")
             .select("id, user_id, photo_url, address, region, comment, severity, created_at")
-            .eq("approved", true)
             .eq("region_code", "09")
             .order("created_at", { ascending: false })
             .limit(15),
@@ -36,7 +35,7 @@ ${r.comment ? `<p>${esc(r.comment)}</p>` : ""}</div>`;
         const body = `<div class="card"><span class="muted">Здравствуйте, ${esc(me?.full_name || "")}</span><br>
 <span class="big">${esc(me?.credits ?? 0)}</span> кредитов
 <a class="btn" href="/lite/report">Сообщить о загрязнении</a></div>
-<h1>Последние жалобы</h1>${cards.join("") || '<p class="muted">Пока нет одобренных жалоб.</p>'}`;
+<h1>Доступные жалобы</h1>${cards.join("") || '<p class="muted">Пока нет жалоб.</p>'}`;
         return page({ title: "Главная", active: "/lite", body, setCookies: session.setCookies });
       },
     },
