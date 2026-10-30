@@ -243,46 +243,6 @@ function LandingPage() {
         </div>
       </ScrollReveal>
 
-      {/* Creators & Team */}
-      <ScrollReveal className="mt-16" delay={40}>
-        <section id="creators">
-        <div className="text-center">
-          <h2 className="text-3xl font-semibold">Создатели проекта</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Разработчики Taza Koz</p>
-        </div>
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {CREATORS.map(({ name, role, badge, icon: Icon, avatar, accent }) => (
-            <article
-              key={name}
-              className="neu-raised group relative overflow-hidden rounded-3xl p-5 transition-all hover:-translate-y-1.5"
-            >
-              <div className="absolute inset-x-0 top-0 h-1 bg-brand-gradient opacity-0 transition-opacity group-hover:opacity-100" />
-              <div className="flex items-center gap-4">
-                <div className="neu-inset shrink-0 rounded-full p-1">
-                  <img
-                    src={avatar}
-                    alt={name}
-                    width={88}
-                    height={88}
-                    className="size-22 rounded-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <span className="neu-inset inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground">
-                    <Icon className="size-3" strokeWidth={1.8} />
-                    {badge}
-                  </span>
-                  <h3 className="mt-2 text-base font-semibold leading-snug">{name}</h3>
-                  <p className={`mt-0.5 text-sm font-medium ${accent}`}>{role}</p>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-        </section>
-      </ScrollReveal>
-
       {/* CTA */}
       <ScrollReveal className="neu-raised mt-16 flex flex-col items-center gap-4 rounded-3xl px-6 py-10 text-center">
         <h2 className="text-2xl font-semibold">Kör. Habarla. Qorğa.</h2>
