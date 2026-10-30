@@ -6,9 +6,6 @@ import {
   ShieldCheck,
   Users,
   Waves,
-  Code,
-  Target,
-  PenTool,
   Leaf,
   Heart,
   Zap,
@@ -271,12 +268,6 @@ function LandingPage() {
           <p className="text-xs text-muted-foreground">© 2026 Taza Koz. Все права защищены.</p>
         </div>
         <div className="mt-6 flex flex-wrap items-center gap-4 text-sm">
-          <a
-            href="#creators"
-            className="flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
-          >
-            О нас
-          </a>
           {FOOTER_LINKS.map(({ label, to }) => (
             <Link
               key={label}
