@@ -26,9 +26,6 @@ import { useEffect } from "react";
 import { useSession } from "@/hooks/useSession";
 import { hasAnyVerifiedCache } from "@/lib/verified-cache";
 import { useProfile, hasRole } from "@/hooks/useProfile";
-import avatarErnar from "@/assets/team-ernar.jpg";
-import avatarAlmagul from "@/assets/team-almagul.jpg";
-import avatarKarakat from "@/assets/team-karakat.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -95,33 +92,6 @@ const STEPS = [
   { n: "02", title: "Снял", text: "Фото уходит на ИИ-проверку." },
   { n: "03", title: "Отметили", text: "Точка на карте и заявка бригаде." },
   { n: "04", title: "Убрали", text: "Команда закрывает вызов, вы получаете кредиты." },
-];
-
-const CREATORS = [
-  {
-    name: "Турсынгалиев Ернар Ержанович",
-    role: "Lead Developer",
-    badge: "Технический лидер",
-    icon: Code,
-    avatar: avatarErnar,
-    accent: "text-primary",
-  },
-  {
-    name: "Урал Алмагүл Сакенқызы",
-    role: "Product Manager",
-    badge: "Менеджер продукта",
-    icon: Target,
-    avatar: avatarAlmagul,
-    accent: "text-accent",
-  },
-  {
-    name: "Қазыбай Қарақат Асылбекқалиқызы",
-    role: "UI/UX Designer",
-    badge: "UI/UX дизайнер",
-    icon: PenTool,
-    avatar: avatarKarakat,
-    accent: "text-water",
-  },
 ];
 
 const STATS = [
