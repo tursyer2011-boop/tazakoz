@@ -17,20 +17,31 @@ const TIZI_SYSTEM = `Ты — Тизи (TZ), дружелюбный эко-по�
 
 Правила:
 - Всегда отвечай по-русски, коротко и дружелюбно, без лишней воды.
-- Если пользователь просит маршрут — обязательно вызови build_route. Если точки непонятны, уточни названия мест.
+- Если пользователь просит маршрут — сразу вызови build_route. Не спрашивай, откуда он идёт: если пользователь не назвал точку старта, оставь from пустым — маршрут построится от его текущего местоположения (GPS). Не уточняй улицу и дом пункта назначения — передай название как есть (например «Ашукур»), система сама найдёт ближайшее место.
+- Если инструмент вернул ошибку про местоположение, попроси разрешить доступ к геолокации.
 - Если место вне Мангистауской области — честно скажи, что навигатор работает только по региону.
 - Не выдумывай факты о платформе; если не знаешь — предложи написать в поддержку.`;
 
 type GeoPoint = { lat: number; lon: number; name: string };
 
-async function geocodePlace(query: string): Promise<GeoPoint | null> {
+type UserLoc = { lat: number; lon: number; accuracy?: number } | null;
+
+function distKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
+  const r = Math.PI / 180;
+  const x = (b.lon - a.lon) * r * Math.cos(((a.lat + b.lat) / 2) * r);
+  const y = (b.lat - a.lat) * r;
+  return Math.sqrt(x * x + y * y) * 6371;
+}
+
+async function geocodePlace(query: string, near?: UserLoc): Promise<GeoPoint | null> {
   try {
     const url =
-      `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ru` +
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=${near ? 10 : 1}&accept-language=ru` +
       `&viewbox=50.0,46.5,56.0,41.5&bounded=1&q=${encodeURIComponent(query)}`;
     const res = await fetch(url, { headers: { "User-Agent": "TazaKoz/1.0 (https://tazakoz.online)" } });
     if (!res.ok) return null;
     const data = (await res.json()) as { lat: string; lon: string; display_name: string }[];
+    if (near) data.sort((a, b) => distKm(near, { lat: +a.lat, lon: +a.lon }) - distKm(near, { lat: +b.lat, lon: +b.lon }));
     const first = data[0];
     if (!first) return null;
     return { lat: Number(first.lat), lon: Number(first.lon), name: first.display_name };
@@ -118,10 +129,25 @@ async function routeBus(key: string, from: GeoPoint, to: GeoPoint): Promise<Rout
   };
 }
 
-async function buildRoute(fromQuery: string, toQuery: string, mode: "walk" | "car" | "bus"): Promise<RouteResult> {
+const SELF_RE = /^(|я|мое|моё|мое местоположение|моё местоположение|текущее местоположение|здесь|тут|от меня|my location)$/i;
+
+async function buildRoute(
+  fromQuery: string | undefined,
+  toQuery: string,
+  mode: "walk" | "car" | "bus",
+  loc: UserLoc,
+): Promise<RouteResult> {
   const key = process.env["TWOGIS_BROWSER_KEY"];
   if (!key) return { ok: false, error: "Сервис карт не настроен" };
-  const [from, to] = await Promise.all([geocodePlace(fromQuery), geocodePlace(toQuery)]);
+  const useSelf = SELF_RE.test((fromQuery ?? "").trim());
+  if (useSelf && !loc) return { ok: false, error: "Нет доступа к местоположению пользователя — попросите разрешить геолокацию" };
+  fromQuery = fromQuery ?? "";
+  const [from, to] = await Promise.all([
+    useSelf && loc
+      ? Promise.resolve<GeoPoint>({ lat: loc.lat, lon: loc.lon, name: `Ваше местоположение (±${Math.round(loc.accuracy ?? 0)} м)` })
+      : geocodePlace(fromQuery, loc),
+    geocodePlace(toQuery, loc),
+  ]);
   if (!from) return { ok: false, error: `Не нашёл место «${fromQuery}» в Мангистауской области` };
   if (!to) return { ok: false, error: `Не нашёл место «${toQuery}» в Мангистауской области` };
   if (mode === "bus") return routeBus(key, from, to);
@@ -138,12 +164,18 @@ export async function handleTiziChat(request: Request): Promise<Response> {
   const userId = userData?.user?.id;
   if (userError || !userId) return Response.json({ error: "Сессия устарела, войдите снова" }, { status: 401 });
 
-  let body: { threadId?: string; messages?: UIMessage[] };
+  let body: { threadId?: string; messages?: UIMessage[]; location?: unknown };
   try {
     body = (await request.json()) as typeof body;
   } catch {
     return Response.json({ error: "Некорректный запрос" }, { status: 400 });
   }
+  const rawLoc = body.location as { lat?: unknown; lon?: unknown; accuracy?: unknown } | null | undefined;
+  const loc: UserLoc =
+    rawLoc && typeof rawLoc.lat === "number" && typeof rawLoc.lon === "number" &&
+    Math.abs(rawLoc.lat) <= 90 && Math.abs(rawLoc.lon) <= 180
+      ? { lat: rawLoc.lat, lon: rawLoc.lon, accuracy: typeof rawLoc.accuracy === "number" ? rawLoc.accuracy : undefined }
+      : null;
   const threadId = body.threadId;
   const messages = body.messages;
   if (!threadId || !Array.isArray(messages) || messages.length === 0) {
@@ -196,7 +228,7 @@ export async function handleTiziChat(request: Request): Promise<Response> {
   const modelMessages = await convertToModelMessages(messages);
   const result = streamText({
     model: provider.responses("openai/gpt-6-astra"),
-    system: TIZI_SYSTEM,
+    system: TIZI_SYSTEM + (loc ? "\n\nGPS пользователя известен." : "\n\nGPS пользователя пока неизвестен."),
     messages: modelMessages,
     abortSignal: request.signal,
     stopWhen: stepCountIs(5),
@@ -205,11 +237,11 @@ export async function handleTiziChat(request: Request): Promise<Response> {
         description:
           "Построить маршрут между двумя местами в Мангистауской области. Режимы: walk — пешком, car — на машине, bus — на автобусе/общественном транспорте.",
         inputSchema: z.object({
-          from: z.string().describe("Откуда: название места, улицы или города"),
+          from: z.string().optional().describe("Откуда. Оставь пустым — будет текущее GPS-местоположение пользователя"),
           to: z.string().describe("Куда: название места, улицы или города"),
           mode: z.enum(["walk", "car", "bus"]).describe("Режим: walk пешком, car машина, bus автобус"),
         }),
-        execute: async ({ from, to, mode }) => buildRoute(from, to, mode),
+        execute: async ({ from, to, mode }) => buildRoute(from, to, mode, loc),
       }),
     },
     providerOptions: {

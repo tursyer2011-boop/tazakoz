@@ -107,6 +107,19 @@ function ChatWindow({
     void supabase.auth.getSession().then(({ data }) => setToken(data.session?.access_token ?? null));
   }, []);
 
+  const locRef = useRef<{ lat: number; lon: number; accuracy: number } | null>(null);
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    const id = navigator.geolocation.watchPosition(
+      (p) => {
+        locRef.current = { lat: p.coords.latitude, lon: p.coords.longitude, accuracy: p.coords.accuracy };
+      },
+      () => toast.error("Разрешите доступ к местоположению, чтобы Тизи строил маршрут от вас"),
+      { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 },
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, []);
+
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
@@ -214,7 +227,7 @@ function ChatWindow({
           onSubmit={(msg) => {
             const text = msg.text.trim();
             if (!text || busy) return;
-            void sendMessage({ text });
+            void sendMessage({ text }, { body: { location: locRef.current } });
           }}
         >
           <PromptInputTextarea
