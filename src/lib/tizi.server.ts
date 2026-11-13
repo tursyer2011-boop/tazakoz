@@ -24,7 +24,7 @@ const TIZI_SYSTEM = `Ты — Тизи (TZ), дружелюбный эко-по�
 
 type GeoPoint = { lat: number; lon: number; name: string };
 
-type UserLoc = { lat: number; lon: number; accuracy?: number } | null;
+type UserLoc = { lat: number; lon: number; accuracy?: number | undefined } | null;
 
 function distKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
   const r = Math.PI / 180;
