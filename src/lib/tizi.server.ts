@@ -160,7 +160,7 @@ async function routeBus(key: string, from: GeoPoint, to: GeoPoint): Promise<Rout
 
 const SELF_RE = /^(|я|мое|моё|мое местоположение|моё местоположение|текущее местоположение|здесь|тут|от меня|my location)$/i;
 
-async function buildRoute(
+export async function buildRoute(
   fromQuery: string | undefined,
   toQuery: string,
   mode: "walk" | "car" | "bus",
