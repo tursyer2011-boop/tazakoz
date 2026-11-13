@@ -108,7 +108,8 @@ async function routeCarOrWalk(key: string, from: GeoPoint, to: GeoPoint, mode: "
     fromName: from.name,
     toName: to.name,
     distanceKm: Math.round((route.total_distance / 1000) * 10) / 10,
-    durationMin: Math.round((route.total_duration ?? 0) / 60),
+    // 2GIS pedestrian endpoint returns driving timing; use ~5 km/h walking pace.
+    durationMin: mode === "walk" ? Math.round((route.total_distance / 1000 / 5) * 60) : Math.round((route.total_duration ?? 0) / 60),
     details: mode === "car" ? "Самый быстрый автомобильный маршрут с учётом пробок." : "Пеший маршрут.",
   };
 }
