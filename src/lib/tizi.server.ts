@@ -33,7 +33,36 @@ function distKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }
   return Math.sqrt(x * x + y * y) * 6371;
 }
 
+function inRegion(p: { lat: number; lon: number }) {
+  return p.lat >= 41.5 && p.lat <= 46.5 && p.lon >= 50 && p.lon <= 56;
+}
+
+async function geocode2Gis(query: string, near?: UserLoc): Promise<GeoPoint | null> {
+  const key = process.env["TWOGIS_BROWSER_KEY"];
+  if (!key) return null;
+  try {
+    const center = near ?? { lat: 43.65, lon: 51.17 };
+    const url =
+      `https://catalog.api.2gis.com/3.0/items?q=${encodeURIComponent(query)}` +
+      `&location=${center.lon},${center.lat}&fields=items.point,items.full_name,items.address_name&page_size=10&key=${key}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      result?: { items?: { name?: string; full_name?: string; address_name?: string; point?: { lat: number; lon: number } }[] };
+    };
+    const items = (data.result?.items ?? []).filter((i) => i.point && inRegion(i.point));
+    const first = items[0];
+    if (!first?.point) return null;
+    const name = [first.full_name ?? first.name, first.address_name].filter(Boolean).join(", ");
+    return { lat: first.point.lat, lon: first.point.lon, name: name || query };
+  } catch {
+    return null;
+  }
+}
+
 async function geocodePlace(query: string, near?: UserLoc): Promise<GeoPoint | null> {
+  const viaGis = await geocode2Gis(query, near);
+  if (viaGis) return viaGis;
   try {
     const url =
       `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=${near ? 10 : 1}&accept-language=ru` +
